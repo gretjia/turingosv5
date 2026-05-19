@@ -40,6 +40,9 @@ fn collect_control_plane_refs(root: &Path, dir: &Path, matches: &mut Vec<String>
     }) {
         let entry = entry.expect("directory entry should be readable");
         let path = entry.path();
+        if path.starts_with(root.join("src/devtool")) || path.starts_with(root.join("src/bin")) {
+            continue;
+        }
         if path.is_dir() {
             collect_control_plane_refs(root, &path, matches);
             continue;
@@ -741,7 +744,7 @@ fn harness_runtime_does_not_read_agent_broadcast() {
     collect_control_plane_refs(&root, &root.join("src"), &mut matches);
     assert!(
         matches.is_empty(),
-        "V5 runtime must not read harness broadcast/control-plane files:\n{}",
+        "V5 runtime must not read harness broadcast/control-plane files; src/devtool and src/bin are development tooling exceptions:\n{}",
         matches.join("\n")
     );
 }

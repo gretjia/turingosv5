@@ -3,6 +3,7 @@
 .venv/
 .codex
 .claude/
+.turingos_system/
 logs/
 tmp/
 **/__pycache__/
