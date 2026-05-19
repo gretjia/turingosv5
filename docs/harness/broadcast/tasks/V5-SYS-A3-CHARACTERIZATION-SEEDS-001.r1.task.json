@@ -1,0 +1,50 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A3-CHARACTERIZATION-SEEDS-001",
+  "revision": 1,
+  "title": "Create characterization seed fixtures",
+  "phase": "V5-SYS",
+  "lane": "Characterization",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Capture tiny behavior fixtures for reusable old-system capabilities without copying source or trust roots.",
+  "context": "No reuse port may be defined before characterization identifies behavior worth preserving.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["docs", "qa", "json"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["characterization"],
+  "allowed_files": [
+    "fixtures/turingos_system/**",
+    "docs/v5_dev/CHARACTERIZATION_STRATEGY.md",
+    "tests/v5_characterization_contract.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    ".turingos_system/**",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**"
+  ],
+  "required_behavior": [
+    "Fixtures must be small JSON files",
+    "No /home absolute paths",
+    "No old genesis or constitution truth"
+  ],
+  "acceptance_tests": [
+    "find fixtures/turingos_system -name '*.json' -print -exec jq . {} \\;",
+    "cargo test --test v5_characterization_contract",
+    "cargo test --workspace"
+  ],
+  "visible_gates": ["characterization_contract"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not copy old source code",
+    "Do not create reuse ports",
+    "Do not write runtime code"
+  ],
+  "rollback_plan": "Remove characterization fixtures and strategy doc."
+}

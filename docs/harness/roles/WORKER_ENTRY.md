@@ -14,10 +14,11 @@ Read in order:
 
 1. `AGENTS.md`
 2. `AGENT_ENTRY.md`
-3. `docs/harness/WORKER_HARNESS.md`
-4. `docs/harness/TASK_BROADCAST_POLICY.md`
-5. `docs/harness/broadcast/TASK_BOARD.json`
-6. The selected TaskPacket
+3. `docs/harness/roles/WORKER_ENTRY.md`
+4. `docs/harness/WORKER_HARNESS.md`
+5. `docs/harness/TASK_BROADCAST_POLICY.md`
+6. `docs/harness/broadcast/TASK_BOARD.json`
+7. The selected TaskPacket
 
 ## Worker Profile
 

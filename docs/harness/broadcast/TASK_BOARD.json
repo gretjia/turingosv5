@@ -1,20 +1,36 @@
 {
   "board_version": "v0.7",
-  "generated_at": "2026-05-19T06:15:00Z",
+  "generated_at": "2026-05-19T00:00:00Z",
   "generated_by_role": "meta",
-  "source": "V5 baseline correction",
+  "source": "TuringOS V5 DevTape v1.0 final preflight",
   "board_writer": "meta-only",
   "default_worker_profile": {
     "allowed_class": 1,
     "capabilities": [
+      "architecture",
+      "audit",
+      "boundary",
+      "characterization",
+      "cli",
+      "contracts",
+      "devtape",
+      "devtool",
       "docs",
+      "evidence",
+      "github",
       "harness",
       "json",
-      "schema",
-      "qa",
-      "worker-lifecycle",
+      "merge-gate",
       "meta-governance",
-      "policy"
+      "policy",
+      "projection",
+      "qa",
+      "reuse",
+      "rust",
+      "schema",
+      "tests",
+      "veto",
+      "worker-lifecycle"
     ]
   },
   "runtime_boundary": {
@@ -22,7 +38,8 @@
     "v5_runtime_must_not_read": [
       "AGENT_ENTRY.md",
       "docs/harness/broadcast/**",
-      "handover/evidence/**"
+      "handover/evidence/**",
+      ".turingos_system/**"
     ]
   },
   "default_duplicate_policy": "first_valid_pr_wins",
@@ -44,25 +61,14 @@
       "claim_mode": "open_pool",
       "claim_required": false,
       "claim_method": "none",
-      "required_capabilities": [
-        "docs"
-      ],
+      "required_capabilities": ["docs"],
       "preferred_capabilities": [],
-      "allowed_files": [
-        "CHARTER.md"
-      ],
-      "forbidden_files": [
-        "constitution.md",
-        "genesis_payload.toml"
-      ],
+      "allowed_files": ["CHARTER.md"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
       "task_packet": "docs/harness/broadcast/tasks/V5-R0-DOCS-001.r1.task.json",
-      "acceptance_tests": [
-        "git diff --check"
-      ],
+      "acceptance_tests": ["git diff --check"],
       "duplicate_policy": "first_valid_pr_wins",
-      "blockers": [
-        "Retired by V5-H0 baseline correction"
-      ]
+      "blockers": ["Retired by DevTape v1.0 final preflight"]
     },
     {
       "atom_id": "V5-R0-HARNESS-001",
@@ -78,27 +84,14 @@
       "claim_mode": "open_pool",
       "claim_required": false,
       "claim_method": "none",
-      "required_capabilities": [
-        "docs",
-        "harness"
-      ],
+      "required_capabilities": ["docs", "harness"],
       "preferred_capabilities": [],
-      "allowed_files": [
-        "AGENT_ENTRY.md"
-      ],
-      "forbidden_files": [
-        "constitution.md",
-        "genesis_payload.toml"
-      ],
+      "allowed_files": ["AGENT_ENTRY.md"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
       "task_packet": "docs/harness/broadcast/tasks/V5-R0-HARNESS-001.r1.task.json",
-      "acceptance_tests": [
-        "git diff --check",
-        "cargo test --test harness_task_board"
-      ],
+      "acceptance_tests": ["git diff --check", "cargo test --test harness_task_board"],
       "duplicate_policy": "first_valid_pr_wins",
-      "blockers": [
-        "Retired by V5-H0 baseline correction"
-      ]
+      "blockers": ["Retired by DevTape v1.0 final preflight"]
     },
     {
       "atom_id": "V5-R0-QA-001",
@@ -114,113 +107,114 @@
       "claim_mode": "direct_assignment",
       "claim_required": false,
       "claim_method": "none",
-      "required_capabilities": [
-        "qa",
-        "tests"
-      ],
+      "required_capabilities": ["qa", "tests"],
       "preferred_capabilities": [],
-      "allowed_files": [
-        "tests/constitution_no_new_parallel_substrate.rs"
-      ],
-      "forbidden_files": [
-        "constitution.md",
-        "genesis_payload.toml"
-      ],
+      "allowed_files": ["tests/constitution_no_new_parallel_substrate.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
       "task_packet": "docs/harness/broadcast/tasks/V5-R0-QA-001.r1.task.json",
-      "acceptance_tests": [
-        "cargo test --test constitution_no_new_parallel_substrate"
-      ],
+      "acceptance_tests": ["cargo test --test constitution_no_new_parallel_substrate"],
       "duplicate_policy": "no_duplicates",
-      "blockers": [
-        "Retired before H0 smoke; no Class 3 worker self-selection"
-      ]
+      "blockers": ["Retired by DevTape v1.0 final preflight"]
     },
     {
       "atom_id": "V5-H0-HARNESS-JSON-001",
       "revision": 1,
       "title": "Harden TASK_BOARD JSON and schema smoke",
-      "status": "open",
+      "status": "retired",
       "phase": "V5-H0",
       "lane": "Harness",
       "class": 1,
       "priority": "P0",
-      "self_select": true,
+      "self_select": false,
       "meta_opened": true,
       "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": [
-        "harness",
-        "json",
-        "schema",
-        "qa"
-      ],
+      "claim_required": false,
+      "claim_method": "none",
+      "required_capabilities": ["harness", "json", "schema", "qa"],
       "preferred_capabilities": [],
-      "allowed_files": [
-        "docs/harness/schemas/task_board.schema.json",
-        "tests/harness_task_board.rs"
-      ],
-      "forbidden_files": [
-        "constitution.md",
-        "genesis_payload.toml",
-        "docs/harness/broadcast/TASK_BOARD.json",
-        "src/**"
-      ],
+      "allowed_files": ["docs/harness/schemas/task_board.schema.json", "tests/harness_task_board.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
       "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-JSON-001.r1.task.json",
-      "acceptance_tests": [
-        "jq . docs/harness/broadcast/TASK_BOARD.json",
-        "cargo test --test harness_task_board"
-      ],
+      "acceptance_tests": ["jq . docs/harness/broadcast/TASK_BOARD.json", "cargo test --test harness_task_board"],
       "duplicate_policy": "first_valid_pr_wins",
-      "blockers": []
+      "blockers": ["Retired by DevTape v1.0 final preflight"]
     },
     {
       "atom_id": "V5-H0-HARNESS-SINGLESHOT-001",
       "revision": 1,
       "title": "Enforce single-shot worker halt lifecycle",
-      "status": "open",
+      "status": "retired",
       "phase": "V5-H0",
       "lane": "Harness",
       "class": 1,
       "priority": "P0",
-      "self_select": true,
+      "self_select": false,
       "meta_opened": true,
       "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": [
-        "harness",
-        "docs",
-        "worker-lifecycle"
-      ],
+      "claim_required": false,
+      "claim_method": "none",
+      "required_capabilities": ["harness", "docs", "worker-lifecycle"],
       "preferred_capabilities": [],
-      "allowed_files": [
-        "AGENT_ENTRY.md",
-        "docs/harness/WORKER_HARNESS.md",
-        "docs/harness/templates/WorkerReport.md",
-        "docs/harness/schemas/worker_report.schema.json",
-        "tests/harness_task_board.rs"
-      ],
-      "forbidden_files": [
-        "constitution.md",
-        "genesis_payload.toml",
-        "docs/harness/broadcast/TASK_BOARD.json",
-        "src/**"
-      ],
+      "allowed_files": ["AGENT_ENTRY.md", "docs/harness/WORKER_HARNESS.md", "docs/harness/templates/WorkerReport.md", "docs/harness/schemas/worker_report.schema.json", "tests/harness_task_board.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
       "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-SINGLESHOT-001.r1.task.json",
-      "acceptance_tests": [
-        "cargo test --test harness_task_board"
-      ],
+      "acceptance_tests": ["cargo test --test harness_task_board"],
       "duplicate_policy": "first_valid_pr_wins",
-      "blockers": []
+      "blockers": ["Retired by DevTape v1.0 final preflight"]
     },
     {
       "atom_id": "V5-H0-HARNESS-REPAIR-001",
       "revision": 1,
       "title": "Document repair fuse and dirty conflict quarantine",
-      "status": "open",
+      "status": "retired",
       "phase": "V5-H0",
       "lane": "Harness",
+      "class": 1,
+      "priority": "P0",
+      "self_select": false,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": false,
+      "claim_method": "none",
+      "required_capabilities": ["harness", "meta-governance", "policy"],
+      "preferred_capabilities": [],
+      "allowed_files": ["docs/harness/TASK_BROADCAST_POLICY.md", "docs/harness/FAILURE_PLAYBOOK.md", "docs/harness/DIRTY_TREE_POLICY.md", "docs/harness/META_HARNESS.md", "docs/harness/templates/MergeDecision.md", "tests/harness_task_board.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-REPAIR-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test harness_task_board"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["Retired by DevTape v1.0 final preflight"]
+    },
+    {
+      "atom_id": "V5-SYS-A0-ARCH-PIN-001",
+      "revision": 1,
+      "title": "Pin DevTape v1.0 core architecture",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Architecture",
+      "class": 0,
+      "priority": "P0",
+      "self_select": false,
+      "meta_opened": true,
+      "claim_mode": "direct_assignment",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["architecture", "docs", "meta-governance"],
+      "preferred_capabilities": ["devtape", "policy"],
+      "allowed_files": ["docs/v5_dev/CORE_DEV_FLOW.md", "docs/v5_dev/DEVTAPE_V1_EXECUTION_PLAN.md", "tests/v5_devtape_v1_execution_plan.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A0-ARCH-PIN-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test v5_devtape_v1_execution_plan", "cargo test --workspace"],
+      "duplicate_policy": "no_duplicates",
+      "blockers": []
+    },
+    {
+      "atom_id": "V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001",
+      "revision": 1,
+      "title": "Close baseline and align TuringOS System semantics",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Baseline",
       "class": 1,
       "priority": "P0",
       "self_select": true,
@@ -228,32 +222,244 @@
       "claim_mode": "open_pool",
       "claim_required": true,
       "claim_method": "draft_pr",
-      "required_capabilities": [
-        "harness",
-        "meta-governance",
-        "policy"
-      ],
-      "preferred_capabilities": [],
-      "allowed_files": [
-        "docs/harness/TASK_BROADCAST_POLICY.md",
-        "docs/harness/FAILURE_PLAYBOOK.md",
-        "docs/harness/DIRTY_TREE_POLICY.md",
-        "docs/harness/META_HARNESS.md",
-        "docs/harness/templates/MergeDecision.md",
-        "tests/harness_task_board.rs"
-      ],
-      "forbidden_files": [
-        "constitution.md",
-        "genesis_payload.toml",
-        "docs/harness/broadcast/TASK_BOARD.json",
-        "src/**"
-      ],
-      "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-REPAIR-001.r1.task.json",
-      "acceptance_tests": [
-        "cargo test --test harness_task_board"
-      ],
+      "required_capabilities": ["docs", "harness", "policy"],
+      "preferred_capabilities": ["qa"],
+      "allowed_files": ["AGENTS.md", "AGENT_ENTRY.md", "docs/v5_dev/**", "docs/harness/README.md", "docs/harness/META_HARNESS.md", "docs/harness/WORKER_HARNESS.md", "tests/v5_*.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001.r1.task.json",
+      "acceptance_tests": ["cargo test --workspace", "git diff --check"],
       "duplicate_policy": "first_valid_pr_wins",
       "blockers": []
+    },
+    {
+      "atom_id": "V5-SYS-A2-WORKBENCH-BOUNDARY-001",
+      "revision": 1,
+      "title": "Define TuringOS system workbench boundary",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Boundary",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["docs", "policy", "qa"],
+      "preferred_capabilities": ["boundary"],
+      "allowed_files": [".gitignore", "docs/lineage/TURINGOS_SYSTEM_SNAPSHOT.md", "docs/v5_dev/TURINGOS_SYSTEM_WORKBENCH.md", "tests/v5_system_workbench_boundary.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**", "src/state/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A2-WORKBENCH-BOUNDARY-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test v5_system_workbench_boundary", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A3-CHARACTERIZATION-SEEDS-001",
+      "revision": 1,
+      "title": "Create characterization seed fixtures",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Characterization",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["docs", "qa", "json"],
+      "preferred_capabilities": ["characterization"],
+      "allowed_files": ["fixtures/turingos_system/**", "docs/v5_dev/CHARACTERIZATION_STRATEGY.md", "tests/v5_characterization_contract.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", ".turingos_system/**", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A3-CHARACTERIZATION-SEEDS-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test v5_characterization_contract", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A4-MICRO-DEVTAPE-001",
+      "revision": 1,
+      "title": "Implement Micro DevTape proof",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "DevTool",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["rust", "devtool", "tests"],
+      "preferred_capabilities": ["devtape"],
+      "allowed_files": ["src/devtool/**", "src/lib.rs", "tests/v5_micro_dev_tape.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**", "src/cas.rs", "src/hash.rs"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A4-MICRO-DEVTAPE-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test v5_micro_dev_tape", "cargo check --workspace", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A3-CHARACTERIZATION-SEEDS-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A5-DERIVED-BOARD-PROJECTOR-001",
+      "revision": 1,
+      "title": "Implement derived board projector",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "DevTool",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["rust", "devtool", "tests", "projection"],
+      "preferred_capabilities": ["board"],
+      "allowed_files": ["src/devtool/**", "tests/v5_board_projector.rs", "docs/v5_dev/DERIVED_TASK_BOARD_CONTRACT.md"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A5-DERIVED-BOARD-PROJECTOR-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test v5_board_projector", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A4-MICRO-DEVTAPE-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A6-CLI-INTAKE-WRAPPER-001",
+      "revision": 1,
+      "title": "Add turingos-dev CLI intake wrapper",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "CLI",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["rust", "cli", "devtool", "tests"],
+      "preferred_capabilities": ["json"],
+      "allowed_files": ["Cargo.toml", "src/bin/turingos-dev.rs", "src/devtool/**", "tests/v5_cli_intake.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A6-CLI-INTAKE-WRAPPER-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test v5_cli_intake", "cargo check --workspace", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A5-DERIVED-BOARD-PROJECTOR-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A7-REUSE-PORT-CONTRACT-001",
+      "revision": 1,
+      "title": "Define minimal reuse port contract",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Contracts",
+      "class": 1,
+      "priority": "P1",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["docs", "schema", "qa", "reuse"],
+      "preferred_capabilities": ["contracts"],
+      "allowed_files": ["docs/contracts/turingos_system_ports.md", "schemas/v5_dev/system_capability.schema.json", "tests/v5_system_ports_contract.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A7-REUSE-PORT-CONTRACT-001.r1.task.json",
+      "acceptance_tests": ["jq . schemas/v5_dev/system_capability.schema.json", "cargo test --test v5_system_ports_contract", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A6-CLI-INTAKE-WRAPPER-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A8-GITHUB-EVIDENCE-SNAPSHOT-001",
+      "revision": 1,
+      "title": "Define GitHub evidence snapshot payload",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Evidence",
+      "class": 1,
+      "priority": "P1",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["docs", "schema", "github", "qa"],
+      "preferred_capabilities": ["evidence"],
+      "allowed_files": ["docs/contracts/github_backup_snapshot.md", "schemas/v5_dev/github_backup_snapshot.schema.json", "tests/v5_github_backup_contract.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A8-GITHUB-EVIDENCE-SNAPSHOT-001.r1.task.json",
+      "acceptance_tests": ["jq . schemas/v5_dev/github_backup_snapshot.schema.json", "cargo test --test v5_github_backup_contract", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A6-CLI-INTAKE-WRAPPER-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A9-ACTIVE-MERGE-GATE-001",
+      "revision": 1,
+      "title": "Implement active merge gate check",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Gate",
+      "class": 1,
+      "priority": "P1",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["rust", "devtool", "tests", "merge-gate"],
+      "preferred_capabilities": ["policy"],
+      "allowed_files": ["src/devtool/**", "tests/v5_active_gate.rs", "docs/v5_dev/ACTIVE_MERGE_GATE_CONTRACT.md"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A9-ACTIVE-MERGE-GATE-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test v5_active_gate", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A7-REUSE-PORT-CONTRACT-001", "V5-SYS-A8-GITHUB-EVIDENCE-SNAPSHOT-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A10-HARNESS-THINNING-001",
+      "revision": 1,
+      "title": "Thin harness into CLI intake layer",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Harness",
+      "class": 1,
+      "priority": "P1",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": ["docs", "harness", "policy"],
+      "preferred_capabilities": ["worker-lifecycle"],
+      "allowed_files": ["AGENT_ENTRY.md", "docs/harness/**", "tests/harness_task_board.rs", "tests/v5_harness_alignment.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A10-HARNESS-THINNING-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test harness_task_board", "cargo test --test v5_harness_alignment", "cargo test --workspace"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": ["V5-SYS-A9-ACTIVE-MERGE-GATE-001"]
+    },
+    {
+      "atom_id": "V5-SYS-A11-AUDIT-VETO-001",
+      "revision": 1,
+      "title": "Run final read-only audit and veto",
+      "status": "open",
+      "phase": "V5-SYS",
+      "lane": "Audit",
+      "class": 1,
+      "priority": "P0",
+      "self_select": false,
+      "meta_opened": true,
+      "claim_mode": "direct_assignment",
+      "claim_required": false,
+      "claim_method": "none",
+      "required_capabilities": ["audit", "veto", "qa"],
+      "preferred_capabilities": ["meta-governance"],
+      "allowed_files": [],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**", "docs/**", "tests/**"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A11-AUDIT-VETO-001.r1.task.json",
+      "acceptance_tests": ["jq . docs/harness/broadcast/TASK_BOARD.json", "git diff --check", "cargo test --workspace"],
+      "duplicate_policy": "no_duplicates",
+      "blockers": ["V5-SYS-A10-HARNESS-THINNING-001"]
     }
   ]
 }

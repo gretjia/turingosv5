@@ -1,0 +1,48 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A0-ARCH-PIN-001",
+  "revision": 1,
+  "title": "Pin DevTape v1.0 core architecture",
+  "phase": "V5-SYS",
+  "lane": "Architecture",
+  "class": 0,
+  "priority": "P0",
+  "goal": "Materialize the Core Illusion, Data Flow Layout, and Micro-Implementation for DevTape v1.0.",
+  "context": "MetaAI-only architecture task. Use KARPATHY_ARCHITECT.md; WorkerAI must not self-select this task.",
+  "assigned_mode": "meta_direct",
+  "required_capabilities": ["architecture", "docs", "meta-governance"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["devtape", "policy"],
+  "allowed_files": [
+    "docs/v5_dev/CORE_DEV_FLOW.md",
+    "docs/v5_dev/DEVTAPE_V1_EXECUTION_PLAN.md",
+    "tests/v5_devtape_v1_execution_plan.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**"
+  ],
+  "required_behavior": [
+    "Use docs/agent_skills/KARPATHY_ARCHITECT.md",
+    "Do not route architect skill to WorkerAI",
+    "Name DevEvent[], BoardProjection, and MergeDecisionCandidate"
+  ],
+  "acceptance_tests": [
+    "cargo test --test v5_devtape_v1_execution_plan",
+    "cargo test --workspace"
+  ],
+  "visible_gates": ["core_dev_flow_materialized", "devtape_plan_materialized"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not implement runtime code",
+    "Do not edit TASK_BOARD.json",
+    "Do not define ports before the micro tape exists"
+  ],
+  "rollback_plan": "Revert the architecture docs and plan test."
+}

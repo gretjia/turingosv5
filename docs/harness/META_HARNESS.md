@@ -20,13 +20,49 @@ merge controller.
 - Request independent audit.
 - Request Veto-AI for Class >= 2 when required.
 - Merge only after gates pass.
-- Record broadcast snapshots and merge decisions into the V4 development
-  evidence rail when running under v4 harness supervision.
+- Record broadcast snapshots, DevEvent CIDs, and merge decisions into the V4
+  development evidence rail when running under V4 DevKernel supervision.
+
+## Architecture Discipline
+
+Before creating a Spec, TaskPacket wave, DevKernel boundary, or reuse port,
+MetaAI must apply `docs/agent_skills/KARPATHY_ARCHITECT.md`.
+
+Architecture decisions must name:
+
+- Core Illusion
+- Data Flow Layout
+- Micro-Implementation
+- the single source of truth
+- the physical bottleneck, if any, that justifies new infrastructure
+
+If no physical bottleneck is named, keep the design monolithic, flat, and
+projection-based. Do not add queues, pub/sub, service meshes, background
+daemons, or broad interface frameworks for vague future extensibility.
+
+## V4 DevKernel Modes
+
+### V4D-1 Passive Recorder
+
+In V4D-1 Passive Recorder mode, MetaAI records DevEvents, board snapshots,
+WorkerReports, CI evidence, review evidence, Veto evidence, and merge decisions
+as development evidence. This mode does not claim V4 controls merge and does
+not override GitHub branch protection.
+
+### V4D-2 Active Merge Gate
+
+In V4D-2 Active Merge Gate mode, MetaAI may merge only when an accepted
+`MergeDecisionAccepted` DevEvent exists for the PR and all GitHub gates pass.
+`MergeDecisionAccepted` is necessary but not sufficient: required checks,
+review requirements, conversation resolution, branch protection, forbidden-file
+inspection, and Class 4 ratification rules still apply.
 
 ## Prohibitions
 
 - No direct push to `main`.
 - No merge with failed or pending required checks.
+- No merge by an unassigned intake session.
+- No merge before explicit MetaAI role assignment and required gates.
 - No merge of Meta-authored PR without independent audit.
 - No worker edits to `TASK_BOARD.json`.
 - No Class 4 self-selection.

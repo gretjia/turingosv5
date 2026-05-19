@@ -16,24 +16,25 @@ Task code must be edited in:
 
 ## Single-Shot Loop
 
-1. Read `AGENT_ENTRY.md`.
-2. Read `AGENTS.md`.
-3. Read `docs/harness/WORKER_HARNESS.md`.
-4. Read `docs/harness/TASK_BROADCAST_POLICY.md`.
-5. Read `docs/harness/broadcast/TASK_BOARD.json`.
-6. Pick exactly one eligible open task.
-7. Read the TaskPacket.
-8. Run `git fetch origin` and `gh pr list --state open`.
-9. Create branch `work/<atom_id>/<worker_slot>` from `origin/main`.
-10. Create the isolated task worktree.
-11. Create a claim commit.
-12. Open a draft PR titled `[CLAIM][<atom_id>][ClassX] <task title>`.
-13. Modify only allowed files.
-14. Run required tests.
-15. Update the same PR with WorkerReport.
-16. Run `gh pr ready`.
-17. Output `[WORKER_HALT]`.
-18. Stop the current task.
+1. Read `AGENTS.md`.
+2. Read `AGENT_ENTRY.md`.
+3. Read `docs/harness/roles/WORKER_ENTRY.md`.
+4. Read `docs/harness/WORKER_HARNESS.md`.
+5. Read `docs/harness/TASK_BROADCAST_POLICY.md`.
+6. Read `docs/harness/broadcast/TASK_BOARD.json`.
+7. Pick exactly one eligible open task.
+8. Read the TaskPacket.
+9. Run `git fetch origin` and `gh pr list --state open`.
+10. Create branch `work/<atom_id>/<worker_slot>` from `origin/main`.
+11. Create the isolated task worktree.
+12. Create a claim commit.
+13. Open a draft PR titled `[CLAIM][<atom_id>][ClassX] <task title>`.
+14. Modify only allowed files.
+15. Run required tests.
+16. Update the same PR with WorkerReport.
+17. Run `gh pr ready`.
+18. Output `[WORKER_HALT]`.
+19. Stop the current task.
 
 H0 smoke workers must not run an automatic task loop. One worker process handles
 one selected TaskPacket, opens one PR, reports once, prints `[WORKER_HALT]`, and

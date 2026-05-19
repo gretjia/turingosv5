@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.dev_event_envelope.v0.8",
+  "title": "DevEventEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "project_id",
+    "actor_identity_cid",
+    "payload_cid",
+    "previous_event_cid",
+    "observed_at",
+    "source",
+    "subject",
+    "evidence",
+    "classification",
+    "integrity"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "DevTaskCreated",
+        "WorkerReportSubmitted",
+        "PRCreated",
+        "CIResultRecorded",
+        "ReviewVerdictSubmitted",
+        "VetoVerdictSubmitted",
+        "MergeDecisionAccepted",
+        "MergeDecisionRejected",
+        "PRMerged",
+        "PRClosed",
+        "RepairTaskCreated",
+        "BranchProtectionSnapshotRecorded",
+        "BootstrapExceptionRequested",
+        "BootstrapExceptionAccepted",
+        "BootstrapExceptionRestored",
+        "ExternalMutationDetected"
+      ]
+    },
+    "project_id": {
+      "type": "string",
+      "const": "turingosv5"
+    },
+    "actor_identity_cid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload_cid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "previous_event_cid": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "human_prompt",
+        "local_cli",
+        "github",
+        "github_actions",
+        "v4_devkernel"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo",
+        "files"
+      ],
+      "properties": {
+        "repo": {
+          "type": "string"
+        },
+        "branch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pr": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commands",
+        "artifacts",
+        "source_anchors"
+      ],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_anchors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "risk_class",
+        "candidate",
+        "runtime_truth"
+      ],
+      "properties": {
+        "risk_class": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "candidate": {
+          "type": "boolean"
+        },
+        "runtime_truth": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "payload_hash",
+        "envelope_hash"
+      ],
+      "properties": {
+        "parent_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "payload_hash": {
+          "type": "string"
+        },
+        "envelope_hash": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A7-REUSE-PORT-CONTRACT-001",
+  "revision": 1,
+  "title": "Define minimal reuse port contract",
+  "phase": "V5-SYS",
+  "lane": "Contracts",
+  "class": 1,
+  "priority": "P1",
+  "goal": "Define only the minimal ports justified after characterization and micro DevTape proof.",
+  "context": "Ports come after data flow, not before it.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["docs", "schema", "qa", "reuse"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["contracts"],
+  "allowed_files": [
+    "docs/contracts/turingos_system_ports.md",
+    "schemas/v5_dev/system_capability.schema.json",
+    "tests/v5_system_ports_contract.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**"
+  ],
+  "required_behavior": [
+    "Define DevTapeBackend, EvidenceObjectStore, and BoardProjection only",
+    "Do not define ExternalBackupPort",
+    "State old adapter is temporary"
+  ],
+  "acceptance_tests": [
+    "jq . schemas/v5_dev/system_capability.schema.json",
+    "cargo test --test v5_system_ports_contract",
+    "cargo test --workspace"
+  ],
+  "visible_gates": ["reuse_port_contract_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not implement ports",
+    "Do not define GitHub backup as a port",
+    "Do not write runtime code"
+  ],
+  "rollback_plan": "Remove reuse port contract/schema/tests."
+}

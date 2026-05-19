@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.dev_task_created.v0.8",
+  "title": "DevTaskCreated",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "atom_id",
+    "title",
+    "risk_class",
+    "status",
+    "allowed_files",
+    "forbidden_files",
+    "acceptance_criteria"
+  ],
+  "properties": {
+    "atom_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "risk_class": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "claimed",
+        "ready",
+        "merged",
+        "blocked",
+        "superseded",
+        "retired"
+      ]
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "forbidden_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferred_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

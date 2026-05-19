@@ -2,9 +2,9 @@
 
 The harness turns multi-CLI development into candidate state transitions.
 
-CLI sessions start unassigned. They read `AGENT_ENTRY.md` first, then enter a
-role only when the human prompt, TaskPacket, ReviewPacket, or Meta continuation
-explicitly assigns one.
+CLI sessions start unassigned. They read `AGENTS.md` first, then
+`AGENT_ENTRY.md`, then enter a role only when the human prompt, TaskPacket,
+ReviewPacket, or Meta continuation explicitly assigns one.
 
 Worker role sessions do not freely write code. They select one eligible
 TaskPacket from the Task Broadcast, work only inside allowed paths, run the

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.ci_result_recorded.v0.8",
+  "title": "CIResultRecorded",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pr_number",
+    "commit_sha",
+    "checks",
+    "all_required_passed",
+    "source"
+  ],
+  "properties": {
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "commit_sha": {
+      "type": "string"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "pending",
+              "cancelled",
+              "skipped"
+            ]
+          },
+          "log_cid": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "all_required_passed": {
+      "type": "boolean"
+    },
+    "source": {
+      "type": "string",
+      "const": "github_actions"
+    }
+  }
+}

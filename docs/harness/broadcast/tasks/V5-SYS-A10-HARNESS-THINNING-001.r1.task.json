@@ -1,0 +1,51 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A10-HARNESS-THINNING-001",
+  "revision": 1,
+  "title": "Thin harness into CLI intake layer",
+  "phase": "V5-SYS",
+  "lane": "Harness",
+  "class": 1,
+  "priority": "P1",
+  "goal": "Demote harness language to CLI intake once derived board exists.",
+  "context": "Harness must not look like kernel, truth source, or runtime substrate.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["docs", "harness", "policy"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["worker-lifecycle"],
+  "allowed_files": [
+    "AGENT_ENTRY.md",
+    "docs/harness/**",
+    "tests/harness_task_board.rs",
+    "tests/v5_harness_alignment.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**"
+  ],
+  "required_behavior": [
+    "Keep worker read order",
+    "Keep single-shot lifecycle",
+    "Keep draft PR claim until DevEvent claim is active",
+    "Do not route WorkerAI to KARPATHY_ARCHITECT.md"
+  ],
+  "acceptance_tests": [
+    "cargo test --test harness_task_board",
+    "cargo test --test v5_harness_alignment",
+    "cargo test --workspace"
+  ],
+  "visible_gates": ["harness_thinning_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not edit TASK_BOARD.json",
+    "Do not remove worker intake",
+    "Do not change runtime code"
+  ],
+  "rollback_plan": "Revert harness wording/test changes."
+}

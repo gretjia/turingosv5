@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.veto_verdict_submitted.v0.8",
+  "title": "VetoVerdictSubmitted",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pr_number",
+    "verdict",
+    "checked_invariants",
+    "violations",
+    "author_is_veto_actor"
+  ],
+  "properties": {
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "VETO"
+      ]
+    },
+    "checked_invariants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "author_is_veto_actor": {
+      "type": "boolean",
+      "const": false
+    }
+  }
+}

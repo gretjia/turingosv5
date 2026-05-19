@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.merge_gate_check.v0.8",
+  "title": "MergeGateCheck",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "merge_decision_cid",
+    "pr_head_sha",
+    "required_checks",
+    "review_decision",
+    "conversation_resolution",
+    "branch_protection_snapshot_cid"
+  ],
+  "properties": {
+    "merge_decision_cid": {
+      "type": "string"
+    },
+    "pr_head_sha": {
+      "type": "string"
+    },
+    "required_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "pending",
+              "cancelled"
+            ]
+          }
+        }
+      }
+    },
+    "review_decision": {
+      "type": "string",
+      "enum": [
+        "APPROVED",
+        "CHANGES_REQUESTED",
+        "REVIEW_REQUIRED",
+        "NOT_REQUIRED"
+      ]
+    },
+    "conversation_resolution": {
+      "type": "boolean"
+    },
+    "branch_protection_snapshot_cid": {
+      "type": "string"
+    },
+    "veto_verdict_cid": {
+      "type": "string"
+    },
+    "worker_report_cid": {
+      "type": "string"
+    },
+    "class4_ratification_cid": {
+      "type": "string"
+    },
+    "bootstrap_exception": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accepted_event_cid",
+        "restored_snapshot_cid"
+      ],
+      "properties": {
+        "accepted_event_cid": {
+          "type": "string"
+        },
+        "restored_snapshot_cid": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

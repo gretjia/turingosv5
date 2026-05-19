@@ -14,6 +14,19 @@ Preferred:
 
 - <capability>
 
+## Required Skill
+
+- `docs/agent_skills/KARPATHY_SIMPLE_CODE.md`
+
+## Implementation Style
+
+- Follow Karpathy Simple Code.
+- Prefer direct input -> transform -> output data flow.
+- No new dependency unless this TaskPacket explicitly allows it.
+- No broad abstraction unless this TaskPacket explicitly requires it.
+- No neighboring refactor outside the allowed files and goal.
+- No clever compression that hurts readability.
+
 ## Claim
 
 - `claim_required: true`

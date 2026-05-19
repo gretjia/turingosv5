@@ -27,6 +27,13 @@ Default user-facing language is Chinese. Technical terms may remain in English.
 - V5 runtime must not depend on V4 evidence/genesis/local path.
 - Class 4 requires exact human ratification.
 
+## Coding Style
+
+For implementation and review work, use
+`docs/agent_skills/KARPATHY_SIMPLE_CODE.md`: prefer direct data flow, minimal
+dependencies, surgical edits, and tested behavior over broad abstraction or
+clever compression.
+
 ## Forbidden Unless Explicitly Assigned
 
 - `constitution.md`

@@ -1,0 +1,49 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A8-GITHUB-EVIDENCE-SNAPSHOT-001",
+  "revision": 1,
+  "title": "Define GitHub evidence snapshot payload",
+  "phase": "V5-SYS",
+  "lane": "Evidence",
+  "class": 1,
+  "priority": "P1",
+  "goal": "Model GitHub PR, CI, review, and branch protection as DevEvent evidence payloads.",
+  "context": "GitHub is external evidence/backup, not accepted state.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["docs", "schema", "github", "qa"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["evidence"],
+  "allowed_files": [
+    "docs/contracts/github_backup_snapshot.md",
+    "schemas/v5_dev/github_backup_snapshot.schema.json",
+    "tests/v5_github_backup_contract.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**"
+  ],
+  "required_behavior": [
+    "Require pr_number, head_sha, checks, and branch_protection_snapshot",
+    "State GitHub snapshot is evidence",
+    "Do not define a GitHub port"
+  ],
+  "acceptance_tests": [
+    "jq . schemas/v5_dev/github_backup_snapshot.schema.json",
+    "cargo test --test v5_github_backup_contract",
+    "cargo test --workspace"
+  ],
+  "visible_gates": ["github_evidence_contract_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not call GitHub APIs",
+    "Do not add a port",
+    "Do not treat GitHub as truth"
+  ],
+  "rollback_plan": "Remove GitHub evidence contract/schema/tests."
+}

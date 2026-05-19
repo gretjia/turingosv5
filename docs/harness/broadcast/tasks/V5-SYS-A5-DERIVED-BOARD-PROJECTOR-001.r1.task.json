@@ -1,0 +1,49 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A5-DERIVED-BOARD-PROJECTOR-001",
+  "revision": 1,
+  "title": "Implement derived board projector",
+  "phase": "V5-SYS",
+  "lane": "DevTool",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Derive BoardProjection from DevTape without writing TASK_BOARD.json.",
+  "context": "Projection proves board is derived view, not truth.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["rust", "devtool", "tests", "projection"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["board"],
+  "allowed_files": [
+    "src/devtool/**",
+    "tests/v5_board_projector.rs",
+    "docs/v5_dev/DERIVED_TASK_BOARD_CONTRACT.md"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/runtime/**"
+  ],
+  "required_behavior": [
+    "Output projection object only",
+    "Include source_event_ids",
+    "Detect manual board source as drift"
+  ],
+  "acceptance_tests": [
+    "cargo test --test v5_board_projector",
+    "cargo test --workspace",
+    "git diff --check"
+  ],
+  "visible_gates": ["board_projector_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not write TASK_BOARD.json",
+    "Do not add persistence",
+    "Do not add dependencies"
+  ],
+  "rollback_plan": "Revert projector code/tests/doc changes."
+}

@@ -366,7 +366,7 @@ fn task_board_schema_records_meta_role_not_cli_generator() {
 }
 
 #[test]
-fn default_worker_profile_can_claim_at_least_one_open_h0_task() {
+fn default_worker_profile_can_claim_at_least_one_open_v1_task() {
     let root = repo_root();
     let board = read_json(root.join("docs/harness/broadcast/TASK_BOARD.json"));
     let profile = &board["default_worker_profile"];
@@ -405,58 +405,62 @@ fn default_worker_profile_can_claim_at_least_one_open_h0_task() {
 
     assert!(
         !eligible.is_empty(),
-        "default_worker_profile must be able to claim at least one open H0 smoke task"
+        "default_worker_profile must be able to claim at least one open DevTape v1.0 task"
     );
 }
 
 #[test]
-fn harness_task_board_publishes_real_smoke_tasks_and_retires_bootstrap_tasks() {
+fn harness_task_board_publishes_devtape_v1_tasks_and_retires_bootstrap_tasks() {
     let root = repo_root();
     let board = read_json(root.join("docs/harness/broadcast/TASK_BOARD.json"));
     let tasks = board["tasks"]
         .as_array()
         .expect("TASK_BOARD.tasks must be an array");
 
-    for atom_id in ["V5-R0-DOCS-001", "V5-R0-HARNESS-001"] {
+    for atom_id in [
+        "V5-R0-DOCS-001",
+        "V5-R0-HARNESS-001",
+        "V5-R0-QA-001",
+        "V5-H0-HARNESS-JSON-001",
+        "V5-H0-HARNESS-SINGLESHOT-001",
+        "V5-H0-HARNESS-REPAIR-001",
+    ] {
         let task = tasks
             .iter()
             .find(|task| task["atom_id"] == atom_id)
             .unwrap_or_else(|| panic!("{atom_id} must remain on the board as retired history"));
         assert_eq!(
             task["status"], "retired",
-            "{atom_id} must be retired before the H0 smoke round"
+            "{atom_id} must be retired before the DevTape v1.0 wave"
         );
     }
 
-    let expected_smoke_tasks = [
+    let expected_v1_tasks = [
         (
-            "V5-H0-HARNESS-JSON-001",
-            ["harness", "json", "schema", "qa"].as_slice(),
+            "V5-SYS-A0-ARCH-PIN-001",
+            ["architecture", "docs", "meta-governance"].as_slice(),
         ),
         (
-            "V5-H0-HARNESS-SINGLESHOT-001",
-            ["harness", "docs", "worker-lifecycle"].as_slice(),
+            "V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001",
+            ["docs", "harness", "policy"].as_slice(),
         ),
         (
-            "V5-H0-HARNESS-REPAIR-001",
-            ["harness", "meta-governance", "policy"].as_slice(),
+            "V5-SYS-A4-MICRO-DEVTAPE-001",
+            ["rust", "devtool", "tests"].as_slice(),
+        ),
+        (
+            "V5-SYS-A10-HARNESS-THINNING-001",
+            ["docs", "harness", "policy"].as_slice(),
         ),
     ];
 
-    for (atom_id, capabilities) in expected_smoke_tasks {
+    for (atom_id, capabilities) in expected_v1_tasks {
         let task = tasks
             .iter()
             .find(|task| task["atom_id"] == atom_id)
-            .unwrap_or_else(|| panic!("{atom_id} must be published for real CLI smoke"));
-        assert_eq!(
-            task["status"], "open",
-            "{atom_id} must be worker-selectable"
-        );
-        assert_eq!(
-            task["self_select"], true,
-            "{atom_id} must be self-selectable"
-        );
-        assert_eq!(task["class"], 1, "{atom_id} must stay in harness Class 1");
+            .unwrap_or_else(|| panic!("{atom_id} must be published for DevTape v1.0"));
+        assert_eq!(task["status"], "open", "{atom_id} must be open");
+        assert!(task["class"].as_i64().is_some_and(|class| class <= 1));
         assert_eq!(
             task["claim_required"], true,
             "{atom_id} must require draft PR claim"
@@ -475,6 +479,15 @@ fn harness_task_board_publishes_real_smoke_tasks_and_retires_bootstrap_tasks() {
             );
         }
     }
+
+    let meta_only = tasks
+        .iter()
+        .find(|task| task["atom_id"] == "V5-SYS-A0-ARCH-PIN-001")
+        .expect("A0 architecture pin must exist");
+    assert_eq!(
+        meta_only["self_select"], false,
+        "A0 is Meta-only and must not be worker self-selectable"
+    );
 }
 
 #[test]
