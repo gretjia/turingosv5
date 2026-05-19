@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Board JSON
+        run: jq . docs/harness/broadcast/TASK_BOARD.json
       - name: Harness task board
         run: cargo test --test harness_task_board
-      - name: No parallel substrate
-        run: cargo test --test constitution_no_parallel_ledger

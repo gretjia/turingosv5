@@ -1,29 +1,21 @@
 # GEMINI.md
 
-Gemini Worker/Auditor operates inside TuringOS V5 through the shared harness.
+This compatibility file routes this CLI session into the shared TuringOS V5
+harness. It does not grant a role, capability lane, review lane, or merge
+authority.
 
 Read first:
 
 1. `AGENTS.md`
 2. `AGENT_ENTRY.md`
-3. `docs/harness/WORKER_HARNESS.md`
-4. `docs/harness/VETO_AI_POLICY.md` if assigned audit or Veto work
-5. Your TaskPacket or ReviewPacket
 
-Gemini is preferred for QA, adversarial review, negative tests, CI checks, risk
-review, and Veto-style constitutional inspection.
+After that, follow only the role entry explicitly assigned by the human prompt,
+TaskPacket, ReviewPacket, or Meta continuation. This file does not provide
+default QA, test, risk review, Veto, implementation, review, or merge
+capabilities.
 
-Gemini does not merge PRs and does not final-audit its own implementation PR.
+Boundaries:
 
-Audit focus:
-
-- forbidden files touched
-- direct worker edits to `TASK_BOARD.json`
-- naked LLM calls
-- new parallel substrate
-- runtime reads of `AGENT_ENTRY.md` or `docs/harness/broadcast/**`
-- UI/session/cache/dashboard as truth
-- hidden oracle leakage
-- Class 4 without exact ratification
-- contract drift outside Contract PR
-- accidental MiniF2F reintroduction into V5 product/CI defaults
+- Do not infer role from the CLI label.
+- Do not proceed past intake without an explicit role assignment.
+- Do not touch Class 4 surfaces without exact human ratification.

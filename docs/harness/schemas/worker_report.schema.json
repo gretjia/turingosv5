@@ -3,7 +3,23 @@
   "$id": "https://turingos.local/schemas/worker_report.schema.json",
   "title": "WorkerReport",
   "type": "object",
-  "required": ["schema_version", "atom_id", "task_revision", "worker_slot", "branch", "pr_url", "files_changed", "tests_run", "forbidden_files_touched", "class4_touched", "new_dependencies"],
+  "required": [
+    "schema_version",
+    "atom_id",
+    "task_revision",
+    "worker_slot",
+    "branch",
+    "pr_url",
+    "claim_pr_url",
+    "ready_pr_url",
+    "worktree",
+    "files_changed",
+    "tests_run",
+    "forbidden_files_touched",
+    "class4_touched",
+    "new_dependencies",
+    "worker_halt_confirmation"
+  ],
   "properties": {
     "schema_version": { "const": "worker_report/v0.7" },
     "atom_id": { "type": "string" },
@@ -11,10 +27,14 @@
     "worker_slot": { "type": "string" },
     "branch": { "type": "string" },
     "pr_url": { "type": "string" },
+    "claim_pr_url": { "type": "string" },
+    "ready_pr_url": { "type": "string" },
+    "worktree": { "type": "string" },
     "files_changed": { "type": "array", "items": { "type": "string" } },
     "tests_run": { "type": "array" },
     "forbidden_files_touched": { "type": "boolean" },
     "class4_touched": { "type": "boolean" },
-    "new_dependencies": { "type": "boolean" }
+    "new_dependencies": { "type": "boolean" },
+    "worker_halt_confirmation": { "const": "[WORKER_HALT]" }
   }
 }

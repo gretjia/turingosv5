@@ -12,6 +12,18 @@ Source repo:
 /home/zephryj/projects/turingosv4
 ```
 
+Archived lineage artifact:
+
+```text
+/home/zephryj/projects/turingosv5_legacy_archive/v4_archive_300fb563ae57d971610b923d83fc55ab083ae245.tar.gz
+```
+
+Archive SHA-256:
+
+```text
+68f45ce258bb6fe42d59ce40a215ce1f2ccc1108ef5cee88338adac6c2a1d433
+```
+
 Bootstrap method:
 
 ```text

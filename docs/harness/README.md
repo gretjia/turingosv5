@@ -2,17 +2,23 @@
 
 The harness turns multi-CLI development into candidate state transitions.
 
-Worker CLIs do not freely write code. They read `AGENT_ENTRY.md`, select one
-eligible TaskPacket from the Task Broadcast, work only inside allowed paths, run
-the required tests, open a PR, submit WorkerReport, and stop.
+CLI sessions start unassigned. They read `AGENT_ENTRY.md` first, then enter a
+role only when the human prompt, TaskPacket, ReviewPacket, or Meta continuation
+explicitly assigns one.
 
-Meta AI owns the broadcast board, PR reconciliation, review coordination, Veto
-requests, merge decisions, and development evidence recording.
+Worker role sessions do not freely write code. They select one eligible
+TaskPacket from the Task Broadcast, work only inside allowed paths, run the
+required tests, open a PR, submit WorkerReport, and stop.
+
+Meta role sessions own the broadcast board, PR reconciliation, review
+coordination, Veto requests, merge decisions, and development evidence
+recording.
 
 ## Files
 
-- `AGENT_ENTRY.md`: single worker entry point.
+- `AGENT_ENTRY.md`: shared unassigned CLI entry point.
 - `AGENTS.md`: shared cross-agent contract.
+- `docs/harness/roles/**`: role-specific entry points.
 - `docs/harness/META_HARNESS.md`: Meta duties and prohibitions.
 - `docs/harness/WORKER_HARNESS.md`: worker task loop.
 - `docs/harness/TASK_BROADCAST_POLICY.md`: task market rules.

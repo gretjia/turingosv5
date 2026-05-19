@@ -2,14 +2,16 @@
 
 Multiple CLI workers must not share one working directory.
 
-Suggested layout:
+Canonical layout:
 
 ```text
 /home/zephryj/projects/turingosv5
-/home/zephryj/projects/turingosv5-claude
-/home/zephryj/projects/turingosv5-gemini
-/home/zephryj/projects/turingosv5-codex-worker
+/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>
 ```
 
-One worker binds to one branch at a time. One branch binds to one worker at a
-time. Meta may inspect all worktrees, but workers must not mix directories.
+The main checkout is for intake and control view. Task code edits happen only
+inside the canonical task worktree path created from latest `origin/main`.
+
+One worker slot binds to one branch at a time. One branch binds to one worker
+slot at a time. Meta may inspect all worktrees, but workers must not mix
+directories or reuse stale sibling checkouts.

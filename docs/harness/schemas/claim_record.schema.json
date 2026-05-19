@@ -3,7 +3,22 @@
   "$id": "https://turingos.local/schemas/claim_record.schema.json",
   "title": "ClaimRecord",
   "type": "object",
-  "required": ["schema_version", "atom_id", "task_revision", "worker_slot", "branch", "claim_pr", "claimed_at"],
+  "required": [
+    "schema_version",
+    "atom_id",
+    "task_revision",
+    "worker_slot",
+    "branch",
+    "claim_pr",
+    "board_version",
+    "board_sha256",
+    "task_packet_path",
+    "task_packet_sha256",
+    "allowed_files",
+    "forbidden_files",
+    "worker_profile",
+    "claim_timestamp"
+  ],
   "properties": {
     "schema_version": { "const": "claim_record/v0.7" },
     "atom_id": { "type": "string" },
@@ -11,6 +26,13 @@
     "worker_slot": { "type": "string" },
     "branch": { "type": "string" },
     "claim_pr": { "type": "string" },
-    "claimed_at": { "type": "string" }
+    "board_version": { "type": "string" },
+    "board_sha256": { "type": "string" },
+    "task_packet_path": { "type": "string" },
+    "task_packet_sha256": { "type": "string" },
+    "allowed_files": { "type": "array", "items": { "type": "string" } },
+    "forbidden_files": { "type": "array", "items": { "type": "string" } },
+    "worker_profile": { "type": "object" },
+    "claim_timestamp": { "type": "string" }
   }
 }

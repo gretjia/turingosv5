@@ -3,15 +3,57 @@
   "$id": "https://turingos.local/schemas/task_packet.schema.json",
   "title": "TaskPacket",
   "type": "object",
-  "required": ["schema_version", "atom_id", "revision", "title", "phase", "lane", "class", "priority", "goal", "allowed_files", "forbidden_files", "acceptance_tests", "hidden_gates_policy", "non_goals", "rollback_plan"],
+  "required": [
+    "schema_version",
+    "atom_id",
+    "revision",
+    "title",
+    "phase",
+    "lane",
+    "class",
+    "priority",
+    "goal",
+    "required_capabilities",
+    "claim_required",
+    "claim_method",
+    "allowed_files",
+    "forbidden_files",
+    "acceptance_tests",
+    "hidden_gates_policy",
+    "worker_halt_required",
+    "non_goals",
+    "rollback_plan"
+  ],
   "properties": {
     "schema_version": { "const": "task_packet/v0.7" },
     "atom_id": { "type": "string" },
     "revision": { "type": "integer", "minimum": 1 },
+    "title": { "type": "string" },
+    "phase": { "type": "string" },
+    "lane": { "type": "string" },
     "class": { "type": "integer", "minimum": 0, "maximum": 4 },
+    "priority": { "enum": ["P0", "P1", "P2", "P3"] },
+    "goal": { "type": "string" },
+    "required_capabilities": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "claim_required": { "type": "boolean" },
+    "claim_method": { "enum": ["draft_pr", "none"] },
+    "preferred_capabilities": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
     "allowed_files": { "type": "array", "items": { "type": "string" } },
     "forbidden_files": { "type": "array", "items": { "type": "string" } },
     "acceptance_tests": { "type": "array", "minItems": 1, "items": { "type": "string" } },
-    "hidden_gates_policy": { "enum": ["meta_only"] }
+    "hidden_gates_policy": { "enum": ["meta_only"] },
+    "worker_halt_required": { "const": true },
+    "max_repair_attempts": { "const": 3 },
+    "conflict_policy": { "const": "supersede_on_dirty" },
+    "non_goals": { "type": "array", "items": { "type": "string" } },
+    "rollback_plan": { "type": "string" }
   }
 }

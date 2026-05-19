@@ -1,9 +1,22 @@
 {
   "board_version": "v0.7",
-  "generated_at": "2026-05-19T00:00:00Z",
-  "generated_by": "codex-meta",
-  "source": "V4 harness",
+  "generated_at": "2026-05-19T06:15:00Z",
+  "generated_by_role": "meta",
+  "source": "V5 baseline correction",
   "board_writer": "meta-only",
+  "default_worker_profile": {
+    "allowed_class": 1,
+    "capabilities": [
+      "docs",
+      "harness",
+      "json",
+      "schema",
+      "qa",
+      "worker-lifecycle",
+      "meta-governance",
+      "policy"
+    ]
+  },
   "runtime_boundary": {
     "development_control_plane_only": true,
     "v5_runtime_must_not_read": [
@@ -13,52 +26,85 @@
     ]
   },
   "default_duplicate_policy": "first_valid_pr_wins",
+  "max_repair_attempts": 3,
+  "worker_halt_required": true,
+  "conflict_policy": "supersede_on_dirty",
   "tasks": [
     {
       "atom_id": "V5-R0-DOCS-001",
       "revision": 1,
       "title": "Add V5 CHARTER.md",
-      "status": "open",
+      "status": "retired",
       "phase": "V5-R0",
       "lane": "Docs",
       "class": 0,
       "priority": "P0",
-      "self_select": true,
+      "self_select": false,
       "meta_opened": true,
       "claim_mode": "open_pool",
-      "required_capabilities": ["docs"],
-      "allowed_files": ["CHARTER.md"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
+      "claim_required": false,
+      "claim_method": "none",
+      "required_capabilities": [
+        "docs"
+      ],
+      "preferred_capabilities": [],
+      "allowed_files": [
+        "CHARTER.md"
+      ],
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml"
+      ],
       "task_packet": "docs/harness/broadcast/tasks/V5-R0-DOCS-001.r1.task.json",
-      "acceptance_tests": ["git diff --check"],
+      "acceptance_tests": [
+        "git diff --check"
+      ],
       "duplicate_policy": "first_valid_pr_wins",
-      "blockers": []
+      "blockers": [
+        "Retired by V5-H0 baseline correction"
+      ]
     },
     {
       "atom_id": "V5-R0-HARNESS-001",
       "revision": 1,
       "title": "Add AGENT_ENTRY.md",
-      "status": "open",
+      "status": "retired",
       "phase": "V5-R0",
       "lane": "Harness",
       "class": 1,
       "priority": "P0",
-      "self_select": true,
+      "self_select": false,
       "meta_opened": true,
       "claim_mode": "open_pool",
-      "required_capabilities": ["docs", "harness"],
-      "allowed_files": ["AGENT_ENTRY.md"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
+      "claim_required": false,
+      "claim_method": "none",
+      "required_capabilities": [
+        "docs",
+        "harness"
+      ],
+      "preferred_capabilities": [],
+      "allowed_files": [
+        "AGENT_ENTRY.md"
+      ],
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml"
+      ],
       "task_packet": "docs/harness/broadcast/tasks/V5-R0-HARNESS-001.r1.task.json",
-      "acceptance_tests": ["git diff --check", "cargo test --test harness_task_board"],
+      "acceptance_tests": [
+        "git diff --check",
+        "cargo test --test harness_task_board"
+      ],
       "duplicate_policy": "first_valid_pr_wins",
-      "blockers": []
+      "blockers": [
+        "Retired by V5-H0 baseline correction"
+      ]
     },
     {
       "atom_id": "V5-R0-QA-001",
       "revision": 1,
       "title": "Add no-new-substrate regression skeleton",
-      "status": "open",
+      "status": "retired",
       "phase": "V5-R0",
       "lane": "QA",
       "class": 3,
@@ -66,13 +112,148 @@
       "self_select": false,
       "meta_opened": false,
       "claim_mode": "direct_assignment",
-      "required_capabilities": ["qa", "tests"],
-      "allowed_files": ["tests/constitution_no_new_parallel_substrate.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
+      "claim_required": false,
+      "claim_method": "none",
+      "required_capabilities": [
+        "qa",
+        "tests"
+      ],
+      "preferred_capabilities": [],
+      "allowed_files": [
+        "tests/constitution_no_new_parallel_substrate.rs"
+      ],
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml"
+      ],
       "task_packet": "docs/harness/broadcast/tasks/V5-R0-QA-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test constitution_no_new_parallel_substrate"],
+      "acceptance_tests": [
+        "cargo test --test constitution_no_new_parallel_substrate"
+      ],
       "duplicate_policy": "no_duplicates",
-      "blockers": ["Meta must explicitly open this Class 3 task"]
+      "blockers": [
+        "Retired before H0 smoke; no Class 3 worker self-selection"
+      ]
+    },
+    {
+      "atom_id": "V5-H0-HARNESS-JSON-001",
+      "revision": 1,
+      "title": "Harden TASK_BOARD JSON and schema smoke",
+      "status": "open",
+      "phase": "V5-H0",
+      "lane": "Harness",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": [
+        "harness",
+        "json",
+        "schema",
+        "qa"
+      ],
+      "preferred_capabilities": [],
+      "allowed_files": [
+        "docs/harness/schemas/task_board.schema.json",
+        "tests/harness_task_board.rs"
+      ],
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/**"
+      ],
+      "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-JSON-001.r1.task.json",
+      "acceptance_tests": [
+        "jq . docs/harness/broadcast/TASK_BOARD.json",
+        "cargo test --test harness_task_board"
+      ],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": []
+    },
+    {
+      "atom_id": "V5-H0-HARNESS-SINGLESHOT-001",
+      "revision": 1,
+      "title": "Enforce single-shot worker halt lifecycle",
+      "status": "open",
+      "phase": "V5-H0",
+      "lane": "Harness",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": [
+        "harness",
+        "docs",
+        "worker-lifecycle"
+      ],
+      "preferred_capabilities": [],
+      "allowed_files": [
+        "AGENT_ENTRY.md",
+        "docs/harness/WORKER_HARNESS.md",
+        "docs/harness/templates/WorkerReport.md",
+        "docs/harness/schemas/worker_report.schema.json",
+        "tests/harness_task_board.rs"
+      ],
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/**"
+      ],
+      "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-SINGLESHOT-001.r1.task.json",
+      "acceptance_tests": [
+        "cargo test --test harness_task_board"
+      ],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": []
+    },
+    {
+      "atom_id": "V5-H0-HARNESS-REPAIR-001",
+      "revision": 1,
+      "title": "Document repair fuse and dirty conflict quarantine",
+      "status": "open",
+      "phase": "V5-H0",
+      "lane": "Harness",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "claim_method": "draft_pr",
+      "required_capabilities": [
+        "harness",
+        "meta-governance",
+        "policy"
+      ],
+      "preferred_capabilities": [],
+      "allowed_files": [
+        "docs/harness/TASK_BROADCAST_POLICY.md",
+        "docs/harness/FAILURE_PLAYBOOK.md",
+        "docs/harness/DIRTY_TREE_POLICY.md",
+        "docs/harness/META_HARNESS.md",
+        "docs/harness/templates/MergeDecision.md",
+        "tests/harness_task_board.rs"
+      ],
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/**"
+      ],
+      "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-REPAIR-001.r1.task.json",
+      "acceptance_tests": [
+        "cargo test --test harness_task_board"
+      ],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": []
     }
   ]
 }

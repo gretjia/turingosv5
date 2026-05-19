@@ -14,30 +14,33 @@ For CLI workers:
 cat AGENT_ENTRY.md
 ```
 
-For Meta:
+For explicitly assigned role work:
 
 ```bash
-cat CODEX.md
-cat docs/harness/META_HARNESS.md
-cat docs/harness/broadcast/TASK_BOARD.json
+cat AGENT_ENTRY.md
+cat docs/harness/roles/<ROLE>_ENTRY.md
 ```
 
 ## Current Phase
 
-V5-R0 Clean Bootstrap:
+V5-H0 Baseline + Real CLI Smoke:
 
 - shared `AGENTS.md`
 - single `AGENT_ENTRY.md`
-- brand adapters for Codex, Claude, and Gemini
+- explicit role entries under `docs/harness/roles/**`
+- CLI compatibility adapters that route into the shared entrypoint
 - Task Broadcast board
 - TaskPacket/WorkerReport/MergeDecision schemas
 - PR/CI scaffolding
 - harness boundary gate
+- V4 archive recorded as lineage only
 
-No product feature work is claimed in R0.
+No product feature work is claimed in R0/H0.
 
 ## Gate
 
 ```bash
+jq . docs/harness/broadcast/TASK_BOARD.json
+cargo check --workspace
 cargo test --test harness_task_board
 ```

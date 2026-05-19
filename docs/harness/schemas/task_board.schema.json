@@ -3,31 +3,113 @@
   "$id": "https://turingos.local/schemas/task_board.schema.json",
   "title": "TaskBoard",
   "type": "object",
-  "required": ["board_version", "generated_at", "generated_by", "board_writer", "runtime_boundary", "tasks"],
+  "required": [
+    "board_version",
+    "generated_at",
+    "generated_by_role",
+    "board_writer",
+    "default_worker_profile",
+    "runtime_boundary",
+    "default_duplicate_policy",
+    "max_repair_attempts",
+    "worker_halt_required",
+    "conflict_policy",
+    "tasks"
+  ],
   "properties": {
     "board_version": { "const": "v0.7" },
     "generated_at": { "type": "string" },
-    "generated_by": { "type": "string" },
+    "generated_by_role": { "const": "meta" },
     "source": { "type": "string" },
     "board_writer": { "const": "meta-only" },
+    "default_worker_profile": { "$ref": "#/$defs/worker_profile" },
     "runtime_boundary": { "type": "object" },
     "default_duplicate_policy": { "type": "string" },
+    "max_repair_attempts": { "const": 3 },
+    "worker_halt_required": { "const": true },
+    "conflict_policy": { "const": "supersede_on_dirty" },
     "tasks": { "type": "array", "items": { "$ref": "#/$defs/task" } }
   },
   "$defs": {
+    "worker_profile": {
+      "type": "object",
+      "required": ["allowed_class", "capabilities"],
+      "properties": {
+        "allowed_class": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
     "task": {
       "type": "object",
-      "required": ["atom_id", "revision", "title", "status", "phase", "lane", "class", "priority", "self_select", "meta_opened", "claim_mode", "required_capabilities", "allowed_files", "forbidden_files", "task_packet", "acceptance_tests", "duplicate_policy", "blockers"],
+      "required": [
+        "atom_id",
+        "revision",
+        "title",
+        "status",
+        "phase",
+        "lane",
+        "class",
+        "priority",
+        "self_select",
+        "meta_opened",
+        "claim_mode",
+        "claim_required",
+        "claim_method",
+        "required_capabilities",
+        "preferred_capabilities",
+        "allowed_files",
+        "forbidden_files",
+        "task_packet",
+        "acceptance_tests",
+        "duplicate_policy",
+        "blockers"
+      ],
       "properties": {
         "atom_id": { "type": "string" },
         "revision": { "type": "integer", "minimum": 1 },
         "title": { "type": "string" },
-        "status": { "enum": ["open", "claimed", "pr_open", "needs_repair", "merged", "superseded", "blocked", "retired"] },
+        "status": {
+          "enum": [
+            "open",
+            "claimed",
+            "pr_open",
+            "needs_repair",
+            "merged",
+            "superseded",
+            "blocked",
+            "BLOCKED_NEEDS_HUMAN",
+            "retired"
+          ]
+        },
+        "phase": { "type": "string" },
+        "lane": { "type": "string" },
         "class": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "priority": { "enum": ["P0", "P1", "P2", "P3"] },
         "self_select": { "type": "boolean" },
         "meta_opened": { "type": "boolean" },
+        "claim_mode": { "enum": ["open_pool", "soft_lease", "direct_assignment"] },
+        "claim_required": { "type": "boolean" },
+        "claim_method": { "enum": ["draft_pr", "none"] },
+        "required_capabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "preferred_capabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "allowed_files": { "type": "array", "items": { "type": "string" } },
+        "forbidden_files": { "type": "array", "items": { "type": "string" } },
         "task_packet": { "type": "string" },
-        "acceptance_tests": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        "acceptance_tests": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "duplicate_policy": { "type": "string" },
+        "blockers": { "type": "array", "items": { "type": "string" } }
       }
     }
   }

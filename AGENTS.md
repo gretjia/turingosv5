@@ -8,11 +8,10 @@ Default user-facing language is Chinese. Technical terms may remain in English.
 
 1. `AGENTS.md`
 2. `AGENT_ENTRY.md`
-3. TaskPacket
-4. Relevant contract
-5. `docs/harness/WORKER_HARNESS.md` if assigned as worker
-6. `docs/harness/META_HARNESS.md` if assigned as Meta
-7. `docs/harness/VETO_AI_POLICY.md` if assigned as Veto
+3. Role entry under `docs/harness/roles/**` only after explicit assignment
+4. TaskPacket or ReviewPacket
+5. Relevant contract
+6. Role-specific harness document
 
 ## Global Invariants
 
@@ -49,18 +48,19 @@ Default user-facing language is Chinese. Technical terms may remain in English.
 ## Worker Boundary
 
 Workers read `AGENT_ENTRY.md`, choose exactly one eligible task from
-`docs/harness/broadcast/TASK_BOARD.json`, implement only the allowed files in
-that TaskPacket, open a PR, submit WorkerReport, then stop that task.
+`docs/harness/broadcast/TASK_BOARD.json` only after the worker role is active,
+implement only the allowed files in that TaskPacket, open a PR, submit
+WorkerReport, then stop that task.
 
 Workers must not edit `TASK_BOARD.json`. The board is Meta-only development
 control plane, not V5 runtime truth.
 
 ## Meta Boundary
 
-Codex Meta maintains the task board and TaskPackets, reconciles PRs with claims,
+Meta maintains the task board and TaskPackets, reconciles PRs with claims,
 coordinates CI/review/Veto, records development evidence, and merges only after
-required gates pass. Meta may not ratify Class 4 and may not merge around branch
-protection.
+required gates pass. Meta may not ratify Class 4 and may not merge around
+branch protection.
 
 ## Risk Classes
 

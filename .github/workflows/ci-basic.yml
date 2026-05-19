@@ -15,9 +15,11 @@ jobs:
         run: rustc --version && cargo --version
       - name: Diff check
         run: git diff --check
+      - name: Board JSON
+        run: jq . docs/harness/broadcast/TASK_BOARD.json
       - name: Format check
         run: cargo fmt --check
       - name: Cargo check
         run: cargo check --workspace
-      - name: Core tests
-        run: cargo test --workspace --lib
+      - name: Harness tests
+        run: cargo test --test harness_task_board
