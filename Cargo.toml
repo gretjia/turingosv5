@@ -8,9 +8,11 @@ description = "TuringOS V5 harness baseline"
 path = "src/lib.rs"
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
 
 [dev-dependencies]
-serde_json = "1"
 
 [workspace]
 members = ["."]

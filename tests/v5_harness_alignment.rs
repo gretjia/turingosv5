@@ -36,6 +36,43 @@ fn worker_read_order_starts_from_global_entry_then_generic_entry_then_role_entry
 }
 
 #[test]
+fn meta_entry_routes_new_sessions_through_meta_ai_manual() {
+    let meta_entry = read_text("docs/harness/roles/META_ENTRY.md");
+    let meta_harness = read_text("docs/harness/META_HARNESS.md");
+    let manual = read_text("docs/harness/META_AI_MANUAL.md");
+
+    let architect = index_of(&meta_entry, "`docs/agent_skills/KARPATHY_ARCHITECT.md`");
+    let harness = index_of(&meta_entry, "`docs/harness/META_HARNESS.md`");
+    let manual_pos = index_of(&meta_entry, "`docs/harness/META_AI_MANUAL.md`");
+    let policy = index_of(&meta_entry, "`docs/harness/TASK_BROADCAST_POLICY.md`");
+    let flow = index_of(&meta_entry, "`docs/v5_dev/CORE_DEV_FLOW.md`");
+    let board = index_of(&meta_entry, "`docs/harness/broadcast/TASK_BOARD.json`");
+
+    assert!(architect < harness);
+    assert!(harness < manual_pos);
+    assert!(manual_pos < policy);
+    assert!(policy < flow);
+    assert!(flow < board);
+    assert!(meta_harness.contains("docs/harness/META_AI_MANUAL.md"));
+
+    for term in [
+        ".turingos_system/devtape/turingosv5/events.jsonl",
+        "DevTape JSONL",
+        "record_hash",
+        "previous_record_hash",
+        "turingos-dev board derive",
+        "turingos-dev audit",
+        "turingos-dev merge check",
+        "open PR claims",
+        "source_event_cids",
+        "runtime_truth",
+        "board is not a lock service",
+    ] {
+        assert!(manual.contains(term), "MetaAI manual missing `{term}`");
+    }
+}
+
+#[test]
 fn unassigned_entry_blocks_merge_but_explicit_meta_can_merge_after_gates() {
     let entry = read_text("AGENT_ENTRY.md");
     assert!(entry.contains("Unassigned intake sessions must not merge PRs."));

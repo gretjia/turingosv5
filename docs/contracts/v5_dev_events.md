@@ -73,13 +73,17 @@ They do not authorize MetaAI, WorkerAI, AuditorAI, or VetoAI duties.
 The v0.8 MVP event family is:
 
 - DevTaskCreated
+- TaskBroadcasted
+- TaskClaimed
 - WorkerReportSubmitted
+- AuditVerdictSubmitted
 - PRCreated
 - CIResultRecorded
 - ReviewVerdictSubmitted
 - VetoVerdictSubmitted
 - MergeDecisionAccepted
 - MergeDecisionRejected
+- MergeDecisionRecorded
 - PRMerged
 - BranchProtectionSnapshotRecorded
 - BootstrapExceptionRequested
@@ -88,6 +92,29 @@ The v0.8 MVP event family is:
 
 Each payload is Candidate evidence until accepted by the appropriate gate.
 Rejected payloads require rejection evidence instead of silent discard.
+
+## Kernel-Driven MVP
+
+The first kernel-driven development loop stores DevEvents as append-only JSONL
+records and derives `TASK_BOARD.json` from those records. `TASK_BOARD.json` is a
+projection; it is not a lock service or runtime truth.
+
+Minimum event flow:
+
+```text
+DevTaskCreated
+-> TaskBroadcasted
+-> TaskClaimed
+-> WorkerReportSubmitted
+-> AuditVerdictSubmitted
+-> VetoVerdictSubmitted
+-> MergeDecisionRecorded
+```
+
+`TaskBroadcasted` makes a task visible on the derived board. `TaskClaimed`
+records the draft PR claim. `MergeDecisionRecorded(PROCEED)` is necessary before
+MetaAI may treat a PR as merge-ready, but GitHub branch protection, CI, review,
+conversation resolution, and Class 4 ratification remain mandatory.
 
 ## Provider Neutrality
 

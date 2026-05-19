@@ -10,8 +10,8 @@ projected into human-readable views and merge decisions.
 ## Data Flow Layout
 
 ```text
-DevEvent[] -> BoardProjection
-DevEvent[] -> MergeDecisionCandidate
+DevEvent JSONL tape -> BoardProjection
+DevEvent JSONL tape -> MergeDecisionCandidate
 DevEvent {
   event_id
   event_type
@@ -56,6 +56,20 @@ derive_board(tape):
 derive_merge_candidate(tape, atom_id):
   inspect task, claim, report, CI, review, Veto, and GitHub evidence events
 ```
+
+## Kernel-Driven MVP Boundary
+
+The first executable loop is local and append-only:
+
+```bash
+turingos-dev event append --file event.json --store .turingos_system/devtape/turingosv5/events.jsonl
+turingos-dev board derive --store .turingos_system/devtape/turingosv5/events.jsonl --out docs/harness/broadcast/TASK_BOARD.json
+turingos-dev audit --store .turingos_system/devtape/turingosv5/events.jsonl --board docs/harness/broadcast/TASK_BOARD.json
+turingos-dev merge check --store .turingos_system/devtape/turingosv5/events.jsonl --pr <number>
+```
+
+MetaAI creates DevEvents; the board is derived from DevEvents; audit fails if a
+board fact lacks source DevTape records.
 
 ## Runtime Boundary
 

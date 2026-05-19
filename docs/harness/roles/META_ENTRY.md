@@ -10,8 +10,10 @@ Read in order:
 3. `docs/harness/roles/META_ENTRY.md`
 4. `docs/agent_skills/KARPATHY_ARCHITECT.md`
 5. `docs/harness/META_HARNESS.md`
-6. `docs/harness/TASK_BROADCAST_POLICY.md`
-7. `docs/harness/broadcast/TASK_BOARD.json`
+6. `docs/harness/META_AI_MANUAL.md`
+7. `docs/harness/TASK_BROADCAST_POLICY.md`
+8. `docs/v5_dev/CORE_DEV_FLOW.md`
+9. `docs/harness/broadcast/TASK_BOARD.json`
 
 Meta role duties are board maintenance, PR reconciliation, review coordination,
 Veto routing, merge decisions, and development evidence recording. This role

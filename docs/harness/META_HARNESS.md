@@ -13,6 +13,8 @@ non-self-selectable tasks.
 ## Duties
 
 - Maintain `AGENT_ENTRY.md`.
+- Follow `docs/harness/META_AI_MANUAL.md` for session intake, progress
+  discovery, DevTape reconciliation, and merge gate checks.
 - Maintain `docs/harness/broadcast/TASK_BOARD.json`.
 - Publish TaskPackets.
 - Publish work to the board instead of replacing the board with private worker
