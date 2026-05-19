@@ -1,0 +1,23 @@
+name: ci-basic
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  basic:
+    name: ci-basic
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: rustc --version && cargo --version
+      - name: Diff check
+        run: git diff --check
+      - name: Format check
+        run: cargo fmt --check
+      - name: Cargo check
+        run: cargo check --workspace
+      - name: Core tests
+        run: cargo test --workspace --lib

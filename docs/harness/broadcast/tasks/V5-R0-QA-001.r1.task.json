@@ -1,0 +1,26 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-R0-QA-001",
+  "revision": 1,
+  "title": "Add no-new-substrate regression skeleton",
+  "phase": "V5-R0",
+  "lane": "QA",
+  "class": 3,
+  "priority": "P0",
+  "goal": "Add a future regression gate preventing new canonical substrates.",
+  "context": "Class 3 QA task is listed but not self-selectable until Meta opens it.",
+  "assigned_mode": "direct_assignment",
+  "required_capabilities": ["qa", "tests"],
+  "allowed_files": ["tests/constitution_no_new_parallel_substrate.rs"],
+  "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json"],
+  "required_behavior": [
+    "Detect new parallel substrate claims",
+    "Stay independent of hidden oracle detail"
+  ],
+  "acceptance_tests": ["cargo test --test constitution_no_new_parallel_substrate"],
+  "visible_gates": ["no_new_parallel_substrate"],
+  "hidden_gates_policy": "meta_only",
+  "non_goals": ["Do not self-select this task", "Do not change runtime code without assignment"],
+  "evidence_path": "handover/evidence/v5_dev/<run_id>",
+  "rollback_plan": "Revert the QA PR."
+}

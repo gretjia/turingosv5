@@ -1,0 +1,78 @@
+{
+  "board_version": "v0.7",
+  "generated_at": "2026-05-19T00:00:00Z",
+  "generated_by": "codex-meta",
+  "source": "V4 harness",
+  "board_writer": "meta-only",
+  "runtime_boundary": {
+    "development_control_plane_only": true,
+    "v5_runtime_must_not_read": [
+      "AGENT_ENTRY.md",
+      "docs/harness/broadcast/**",
+      "handover/evidence/**"
+    ]
+  },
+  "default_duplicate_policy": "first_valid_pr_wins",
+  "tasks": [
+    {
+      "atom_id": "V5-R0-DOCS-001",
+      "revision": 1,
+      "title": "Add V5 CHARTER.md",
+      "status": "open",
+      "phase": "V5-R0",
+      "lane": "Docs",
+      "class": 0,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "required_capabilities": ["docs"],
+      "allowed_files": ["CHARTER.md"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-R0-DOCS-001.r1.task.json",
+      "acceptance_tests": ["git diff --check"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": []
+    },
+    {
+      "atom_id": "V5-R0-HARNESS-001",
+      "revision": 1,
+      "title": "Add AGENT_ENTRY.md",
+      "status": "open",
+      "phase": "V5-R0",
+      "lane": "Harness",
+      "class": 1,
+      "priority": "P0",
+      "self_select": true,
+      "meta_opened": true,
+      "claim_mode": "open_pool",
+      "required_capabilities": ["docs", "harness"],
+      "allowed_files": ["AGENT_ENTRY.md"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-R0-HARNESS-001.r1.task.json",
+      "acceptance_tests": ["git diff --check", "cargo test --test harness_task_board"],
+      "duplicate_policy": "first_valid_pr_wins",
+      "blockers": []
+    },
+    {
+      "atom_id": "V5-R0-QA-001",
+      "revision": 1,
+      "title": "Add no-new-substrate regression skeleton",
+      "status": "open",
+      "phase": "V5-R0",
+      "lane": "QA",
+      "class": 3,
+      "priority": "P0",
+      "self_select": false,
+      "meta_opened": false,
+      "claim_mode": "direct_assignment",
+      "required_capabilities": ["qa", "tests"],
+      "allowed_files": ["tests/constitution_no_new_parallel_substrate.rs"],
+      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
+      "task_packet": "docs/harness/broadcast/tasks/V5-R0-QA-001.r1.task.json",
+      "acceptance_tests": ["cargo test --test constitution_no_new_parallel_substrate"],
+      "duplicate_policy": "no_duplicates",
+      "blockers": ["Meta must explicitly open this Class 3 task"]
+    }
+  ]
+}

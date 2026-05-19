@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.local/schemas/merge_decision.schema.json",
+  "title": "MergeDecision",
+  "type": "object",
+  "required": ["schema_version", "run_id", "atom_id", "task_revision", "pr", "class", "ci", "tests", "decision", "reason"],
+  "properties": {
+    "schema_version": { "const": "merge_decision/v0.7" },
+    "run_id": { "type": "string" },
+    "atom_id": { "type": "string" },
+    "task_revision": { "type": "integer" },
+    "pr": { "type": ["integer", "string"] },
+    "class": { "type": "integer" },
+    "decision": { "enum": ["PROCEED", "HOLD", "VETO", "SUPERSEDE"] },
+    "reason": { "type": "string" }
+  }
+}

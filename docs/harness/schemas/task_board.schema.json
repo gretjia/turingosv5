@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.local/schemas/task_board.schema.json",
+  "title": "TaskBoard",
+  "type": "object",
+  "required": ["board_version", "generated_at", "generated_by", "board_writer", "runtime_boundary", "tasks"],
+  "properties": {
+    "board_version": { "const": "v0.7" },
+    "generated_at": { "type": "string" },
+    "generated_by": { "type": "string" },
+    "source": { "type": "string" },
+    "board_writer": { "const": "meta-only" },
+    "runtime_boundary": { "type": "object" },
+    "default_duplicate_policy": { "type": "string" },
+    "tasks": { "type": "array", "items": { "$ref": "#/$defs/task" } }
+  },
+  "$defs": {
+    "task": {
+      "type": "object",
+      "required": ["atom_id", "revision", "title", "status", "phase", "lane", "class", "priority", "self_select", "meta_opened", "claim_mode", "required_capabilities", "allowed_files", "forbidden_files", "task_packet", "acceptance_tests", "duplicate_policy", "blockers"],
+      "properties": {
+        "atom_id": { "type": "string" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string" },
+        "status": { "enum": ["open", "claimed", "pr_open", "needs_repair", "merged", "superseded", "blocked", "retired"] },
+        "class": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "self_select": { "type": "boolean" },
+        "meta_opened": { "type": "boolean" },
+        "task_packet": { "type": "string" },
+        "acceptance_tests": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      }
+    }
+  }
+}

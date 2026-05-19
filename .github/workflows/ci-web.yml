@@ -1,0 +1,14 @@
+name: ci-web
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  web:
+    name: ci-web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Web smoke
+        run: cargo test --test cli_web_routes_smoke

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.local/schemas/broadcast_snapshot.schema.json",
+  "title": "BroadcastSnapshot",
+  "type": "object",
+  "required": ["schema_version", "snapshot_id", "board_version", "task_board_sha256", "created_at"],
+  "properties": {
+    "schema_version": { "const": "broadcast_snapshot/v0.7" },
+    "snapshot_id": { "type": "string" },
+    "board_version": { "type": "string" },
+    "task_board_sha256": { "type": "string" },
+    "created_at": { "type": "string" }
+  }
+}

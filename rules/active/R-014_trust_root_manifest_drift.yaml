@@ -1,0 +1,22 @@
+id: "R-014"
+name: "trust_root_manifest_drift_warn"
+source_incidents:
+  - "F-2026-04-25-05"  # B7-extra round-1 dual VETO including Trust Root manifest gaps
+fc_trace: "FC3-S3 (readonly subgraph) — manifest consistency"
+axiom: "PREREG § 1.8 + Art. V.1.1 amendment — Trust Root frozen at boot; any tracked-file edit requires SHA-256 recompute + genesis_payload.toml entry update, otherwise boot::verify_trust_root will panic at next start"
+trigger: "pre_edit"
+check:
+  type: "grep"
+  pattern: ".*"
+# A0e-fix 2026-04-25: tried narrowing file_glob via brace expansion but
+# Python fnmatch doesn't support {a,b,c}. Reverted to *.rs with TIGHTER
+# message (one-line glance instead of verbose paragraph) to mitigate
+# alert-fatigue. False-positive cost (warns on non-Trust-Root .rs edits)
+# accepted in exchange for false-negative protection (any future .rs file
+# added to manifest is auto-covered).
+file_glob: "*.rs"
+enforcement: "warn"
+message: "R-014 (FC3-S3 Trust Root): if this file IS in genesis_payload.toml [trust_root] (24 entries as of A0d), recompute sha256sum + update manifest + cargo test boot::verify_trust_root_passes_on_intact_repo. Otherwise next boot panics TRUST_ROOT_TAMPERED."
+stats:
+  times_triggered: 0
+  last_triggered: ""

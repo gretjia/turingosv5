@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.local/schemas/task_packet.schema.json",
+  "title": "TaskPacket",
+  "type": "object",
+  "required": ["schema_version", "atom_id", "revision", "title", "phase", "lane", "class", "priority", "goal", "allowed_files", "forbidden_files", "acceptance_tests", "hidden_gates_policy", "non_goals", "rollback_plan"],
+  "properties": {
+    "schema_version": { "const": "task_packet/v0.7" },
+    "atom_id": { "type": "string" },
+    "revision": { "type": "integer", "minimum": 1 },
+    "class": { "type": "integer", "minimum": 0, "maximum": 4 },
+    "allowed_files": { "type": "array", "items": { "type": "string" } },
+    "forbidden_files": { "type": "array", "items": { "type": "string" } },
+    "acceptance_tests": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "hidden_gates_policy": { "enum": ["meta_only"] }
+  }
+}

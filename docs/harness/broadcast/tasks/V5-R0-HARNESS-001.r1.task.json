@@ -1,0 +1,29 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-R0-HARNESS-001",
+  "revision": 1,
+  "title": "Add AGENT_ENTRY.md",
+  "phase": "V5-R0",
+  "lane": "Harness",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Create the single CLI worker entry point for V5 Task Broadcast.",
+  "context": "Codex, Claude, Gemini, and future workers must start from the same file.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["docs", "harness"],
+  "allowed_files": ["AGENT_ENTRY.md"],
+  "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json"],
+  "required_behavior": [
+    "Route workers through AGENTS.md",
+    "Route workers through WORKER_HARNESS.md",
+    "Route workers through TASK_BOARD.json",
+    "State PR ends current task",
+    "State MiniF2F is not V5 product core"
+  ],
+  "acceptance_tests": ["git diff --check", "cargo test --test harness_task_board"],
+  "visible_gates": ["harness_agent_entry_exists"],
+  "hidden_gates_policy": "meta_only",
+  "non_goals": ["Do not implement product features", "Do not add dependencies"],
+  "evidence_path": "handover/evidence/v5_dev/<run_id>",
+  "rollback_plan": "Revert the harness docs PR."
+}

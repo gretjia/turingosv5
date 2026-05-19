@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.local/schemas/review_packet.schema.json",
+  "title": "ReviewPacket",
+  "type": "object",
+  "required": ["schema_version", "atom_id", "class", "pr", "diff", "evidence", "required_verdict_format"],
+  "properties": {
+    "schema_version": { "const": "review_packet/v0.7" },
+    "atom_id": { "type": "string" },
+    "class": { "type": "integer" },
+    "pr": { "type": "string" },
+    "diff": { "type": "string" },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "required_verdict_format": { "enum": ["PROCEED | CHALLENGE | VETO"] }
+  }
+}

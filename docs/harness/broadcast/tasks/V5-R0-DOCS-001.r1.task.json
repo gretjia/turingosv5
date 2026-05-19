@@ -1,0 +1,28 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-R0-DOCS-001",
+  "revision": 1,
+  "title": "Add V5 CHARTER.md",
+  "phase": "V5-R0",
+  "lane": "Docs",
+  "class": 0,
+  "priority": "P0",
+  "goal": "Add a concise V5 charter declaring the clean-product repo boundary.",
+  "context": "V5 is bootstrapped from V4, but V4 remains development harness only.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["docs"],
+  "allowed_files": ["CHARTER.md"],
+  "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json"],
+  "required_behavior": [
+    "State V5 mission",
+    "State V4 development-only boundary",
+    "State no product feature work in R0",
+    "State MiniF2F is not V5 product core"
+  ],
+  "acceptance_tests": ["git diff --check"],
+  "visible_gates": ["charter_exists"],
+  "hidden_gates_policy": "meta_only",
+  "non_goals": ["Do not change runtime code", "Do not add dependencies"],
+  "evidence_path": "handover/evidence/v5_dev/<run_id>",
+  "rollback_plan": "Revert the docs-only PR."
+}
