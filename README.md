@@ -14,11 +14,11 @@ For CLI workers:
 cat AGENT_ENTRY.md
 ```
 
-For explicitly assigned Meta work:
+For explicitly assigned role work:
 
 ```bash
-cat docs/harness/META_HARNESS.md
-cat docs/harness/broadcast/TASK_BOARD.json
+cat AGENT_ENTRY.md
+cat docs/harness/roles/<ROLE>_ENTRY.md
 ```
 
 ## Current Phase
@@ -27,6 +27,7 @@ V5-H0 Baseline + Real CLI Smoke:
 
 - shared `AGENTS.md`
 - single `AGENT_ENTRY.md`
+- explicit role entries under `docs/harness/roles/**`
 - CLI compatibility adapters that route into the shared entrypoint
 - Task Broadcast board
 - TaskPacket/WorkerReport/MergeDecision schemas

@@ -2,6 +2,16 @@
 
 V5 uses a two-layer development harness.
 
+## Role Entries
+
+All CLI sessions start at `AGENT_ENTRY.md` without a role. Explicit role
+assignment then routes to:
+
+- `docs/harness/roles/META_ENTRY.md`
+- `docs/harness/roles/WORKER_ENTRY.md`
+- `docs/harness/roles/AUDITOR_ENTRY.md`
+- `docs/harness/roles/VETO_ENTRY.md`
+
 ## Meta Harness
 
 Assigned Meta owns Task Broadcast, PR reconciliation, review coordination, Veto

@@ -65,6 +65,7 @@ fn assert_no_cli_role_assignment_language(path: &Path, text: &str) {
         "brand assignment",
         "agent_brand",
         "codex meta",
+        "codex-meta",
         "codex may operate in one of two roles",
         "codex worker",
         "claude worker",
@@ -75,6 +76,8 @@ fn assert_no_cli_role_assignment_language(path: &Path, text: &str) {
         "final-audit",
         "veto-style constitutional inspection",
         "long-context synthesis",
+        "autonomous cli workers",
+        "workers always start intake",
     ];
 
     for phrase in forbidden {
@@ -107,8 +110,23 @@ fn harness_agent_entry_and_cli_adapters_point_to_shared_agents() {
         "AGENT_ENTRY.md must route all workers through AGENTS.md"
     );
     assert!(
+        entry_text.contains("not assigned a role"),
+        "AGENT_ENTRY.md must start CLI sessions without assigning a role"
+    );
+    for role_entry in [
+        "docs/harness/roles/META_ENTRY.md",
+        "docs/harness/roles/WORKER_ENTRY.md",
+        "docs/harness/roles/AUDITOR_ENTRY.md",
+        "docs/harness/roles/VETO_ENTRY.md",
+    ] {
+        assert!(
+            entry_text.contains(role_entry),
+            "AGENT_ENTRY.md must route explicit role assignments to {role_entry}"
+        );
+    }
+    assert!(
         entry_text.contains("docs/harness/broadcast/TASK_BOARD.json"),
-        "AGENT_ENTRY.md must point workers at TASK_BOARD.json"
+        "AGENT_ENTRY.md must mention TASK_BOARD.json as worker role input, not as a universal role assignment"
     );
     assert_no_cli_role_assignment_language(&entry, &entry_text);
 
@@ -120,6 +138,17 @@ fn harness_agent_entry_and_cli_adapters_point_to_shared_agents() {
             text.contains("AGENTS.md") && text.contains("AGENT_ENTRY.md"),
             "{adapter} must import the shared AGENTS.md and AGENT_ENTRY.md boundary"
         );
+        for role_doc in [
+            "docs/harness/WORKER_HARNESS.md",
+            "docs/harness/META_HARNESS.md",
+            "docs/harness/VETO_AI_POLICY.md",
+            "docs/harness/broadcast/TASK_BOARD.json",
+        ] {
+            assert!(
+                !text.contains(role_doc),
+                "{adapter} must not route directly to role-specific docs"
+            );
+        }
         assert_no_cli_role_assignment_language(&path, &text);
     }
 }
@@ -129,13 +158,20 @@ fn harness_docs_do_not_reintroduce_cli_role_lanes() {
     let root = repo_root();
     for rel in [
         "AGENTS.md",
+        "AGENT_ENTRY.md",
         "README.md",
         "HARNESS.md",
         "docs/harness/META_HARNESS.md",
         "docs/harness/WORKER_HARNESS.md",
         "docs/harness/TASK_BROADCAST_POLICY.md",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "docs/harness/schemas/task_board.schema.json",
         "docs/harness/boot_prompts/universal_worker.md",
         "docs/harness/boot_prompts/veto_ai.md",
+        "docs/harness/roles/META_ENTRY.md",
+        "docs/harness/roles/WORKER_ENTRY.md",
+        "docs/harness/roles/AUDITOR_ENTRY.md",
+        "docs/harness/roles/VETO_ENTRY.md",
         "docs/harness/broadcast/tasks/V5-R0-HARNESS-001.r1.task.json",
     ] {
         let path = root.join(rel);
@@ -151,6 +187,40 @@ fn harness_docs_do_not_reintroduce_cli_role_lanes() {
             !root.join(rel).exists(),
             "{rel} must not exist because boot prompts must not encode CLI-specific role lanes"
         );
+    }
+}
+
+#[test]
+fn harness_role_entries_are_explicit_and_separate_from_cli_labels() {
+    let root = repo_root();
+    let roles = [
+        (
+            "docs/harness/roles/META_ENTRY.md",
+            "docs/harness/META_HARNESS.md",
+        ),
+        (
+            "docs/harness/roles/WORKER_ENTRY.md",
+            "docs/harness/WORKER_HARNESS.md",
+        ),
+        (
+            "docs/harness/roles/AUDITOR_ENTRY.md",
+            "docs/harness/templates/ReviewPacket.md",
+        ),
+        (
+            "docs/harness/roles/VETO_ENTRY.md",
+            "docs/harness/VETO_AI_POLICY.md",
+        ),
+    ];
+
+    for (role_entry, required_doc) in roles {
+        let path = root.join(role_entry);
+        assert!(path.exists(), "{role_entry} must exist");
+        let text = read_text(&path);
+        assert!(
+            text.contains("explicitly assigned") && text.contains(required_doc),
+            "{role_entry} must activate only after explicit role assignment and point to {required_doc}"
+        );
+        assert_no_cli_role_assignment_language(&path, &text);
     }
 }
 
@@ -182,6 +252,11 @@ fn harness_task_board_declares_meta_only_writer_and_valid_packets() {
     let board = read_json(&board_path);
 
     assert_eq!(board["board_version"], "v0.7");
+    assert_eq!(board["generated_by_role"], "meta");
+    assert!(
+        board.get("generated_by").is_none(),
+        "TASK_BOARD must not record a CLI-branded generated_by value"
+    );
     assert_eq!(board["board_writer"], "meta-only");
     assert_eq!(
         board["runtime_boundary"]["development_control_plane_only"], true,
@@ -235,6 +310,30 @@ fn harness_task_board_declares_meta_only_writer_and_valid_packets() {
             "task packet {atom_id} must declare visible acceptance tests"
         );
     }
+}
+
+#[test]
+fn task_board_schema_records_meta_role_not_cli_generator() {
+    let root = repo_root();
+    let schema = read_json(root.join("docs/harness/schemas/task_board.schema.json"));
+    let required = required_fields(&schema, "TaskBoard");
+
+    assert!(
+        required.iter().any(|field| field == "generated_by_role"),
+        "TaskBoard schema must require generated_by_role"
+    );
+    assert!(
+        !required.iter().any(|field| field == "generated_by"),
+        "TaskBoard schema must not require generated_by"
+    );
+    assert!(
+        schema["properties"].get("generated_by").is_none(),
+        "TaskBoard schema must not define generated_by"
+    );
+    assert_eq!(
+        schema["properties"]["generated_by_role"]["const"], "meta",
+        "TaskBoard generated_by_role must be a role, not a CLI label"
+    );
 }
 
 #[test]
@@ -308,8 +407,8 @@ fn harness_task_board_publishes_real_smoke_tasks_and_retires_bootstrap_tasks() {
 #[test]
 fn harness_worker_lifecycle_is_single_shot_and_requires_halt() {
     let root = repo_root();
-    let entry =
-        fs::read_to_string(root.join("AGENT_ENTRY.md")).expect("AGENT_ENTRY.md should be readable");
+    let entry = fs::read_to_string(root.join("docs/harness/roles/WORKER_ENTRY.md"))
+        .expect("WORKER_ENTRY.md should be readable");
     let worker_harness = fs::read_to_string(root.join("docs/harness/WORKER_HARNESS.md"))
         .expect("WORKER_HARNESS.md should be readable");
     let worker_report = fs::read_to_string(root.join("docs/harness/templates/WorkerReport.md"))
@@ -341,8 +440,8 @@ fn harness_worker_lifecycle_is_single_shot_and_requires_halt() {
 #[test]
 fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
     let root = repo_root();
-    let entry =
-        fs::read_to_string(root.join("AGENT_ENTRY.md")).expect("AGENT_ENTRY.md should be readable");
+    let entry = fs::read_to_string(root.join("docs/harness/roles/WORKER_ENTRY.md"))
+        .expect("WORKER_ENTRY.md should be readable");
     let worker_harness = fs::read_to_string(root.join("docs/harness/WORKER_HARNESS.md"))
         .expect("WORKER_HARNESS.md should be readable");
     let task_policy = fs::read_to_string(root.join("docs/harness/TASK_BROADCAST_POLICY.md"))

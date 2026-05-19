@@ -2,32 +2,43 @@
 
 You are inside TuringOS V5.
 
-This file is the single entry point for autonomous CLI workers.
+This file is the shared entry point for any CLI session.
 
-Workers always start intake from the main checkout:
+At this point you are not assigned a role by this file. A role becomes active
+only when the human prompt, TaskPacket, ReviewPacket, or Meta continuation
+explicitly assigns it.
+
+Start intake from the main checkout:
 
 ```bash
 cd /home/zephryj/projects/turingosv5
 ```
 
-The main checkout is read-only for task code. Task edits happen only in the
-isolated task worktree.
+The main checkout is for intake and control view. Task code edits happen only
+in an isolated task worktree after the worker role is explicitly active.
 
 ## Read Order
 
 1. Read `AGENTS.md`.
-2. Read `docs/harness/WORKER_HARNESS.md`.
-3. Read `docs/harness/TASK_BROADCAST_POLICY.md`.
-4. Read `docs/harness/broadcast/TASK_BOARD.json`.
-5. Pick exactly one eligible open task.
-6. Read that task's TaskPacket.
-7. Claim the task with a draft PR.
-8. Create a branch/worktree for that task.
-9. Implement only allowed files.
-10. Run required tests.
-11. Convert the same PR to ready with WorkerReport.
-12. Output `[WORKER_HALT]`.
-13. Stop the current task.
+2. Read this file.
+3. Identify whether an explicit role assignment exists.
+4. If a role is assigned, read the matching role entry below.
+5. If no role is assigned, stop after intake and ask for an assignment.
+
+## Role Routing
+
+CLI labels do not grant duties, capabilities, audit authority, or merge
+authority.
+
+- For explicitly assigned Meta work, read `docs/harness/roles/META_ENTRY.md`.
+- For explicitly assigned worker work or task self-selection, read
+  `docs/harness/roles/WORKER_ENTRY.md`.
+- For explicitly assigned independent audit, read
+  `docs/harness/roles/AUDITOR_ENTRY.md`.
+- For explicitly assigned Veto work, read `docs/harness/roles/VETO_ENTRY.md`.
+
+Worker role input includes `docs/harness/broadcast/TASK_BOARD.json`; the board
+is not read as runtime truth or as a universal role assignment.
 
 ## Absolute Rules
 
@@ -62,8 +73,9 @@ V5 product code must never read:
 
 ## Single-shot Smoke Lifecycle
 
-H0 smoke workers run one task and then stop. Do not run a `while true` worker
-loop, automatic re-entry, or background task scanner during this phase.
+H0 smoke worker role sessions run one task and then stop. Do not run a
+`while true` worker loop, automatic re-entry, or background task scanner during
+this phase.
 
 ## Worker Profile
 
@@ -77,8 +89,8 @@ Default profile:
 
 CLI adapter files are compatibility shims only. They do not grant capabilities,
 duties, audit lanes, or merge authority. Task selection is controlled by
-`required_capabilities`, `preferred_capabilities`, and explicit TaskPacket or
-Meta assignment.
+`required_capabilities`, `preferred_capabilities`, and explicit role
+assignment.
 
 ## Draft PR Claim
 

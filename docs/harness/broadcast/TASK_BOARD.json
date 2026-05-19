@@ -1,7 +1,7 @@
 {
   "board_version": "v0.7",
   "generated_at": "2026-05-19T06:15:00Z",
-  "generated_by": "codex-meta",
+  "generated_by_role": "meta",
   "source": "V5 baseline correction",
   "board_writer": "meta-only",
   "runtime_boundary": {
