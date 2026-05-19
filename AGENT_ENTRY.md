@@ -4,6 +4,15 @@ You are inside TuringOS V5.
 
 This file is the single entry point for autonomous CLI workers.
 
+Workers always start intake from the main checkout:
+
+```bash
+cd /home/zephryj/projects/turingosv5
+```
+
+The main checkout is read-only for task code. Task edits happen only in the
+isolated task worktree.
+
 ## Read Order
 
 1. Read `AGENTS.md`.
@@ -12,12 +21,13 @@ This file is the single entry point for autonomous CLI workers.
 4. Read `docs/harness/broadcast/TASK_BOARD.json`.
 5. Pick exactly one eligible open task.
 6. Read that task's TaskPacket.
-7. Create a branch/worktree for that task.
-8. Implement only allowed files.
-9. Run required tests.
-10. Open a PR with WorkerReport.
-11. Stop the current task.
-12. Return to idle polling only after the PR is opened.
+7. Claim the task with a draft PR.
+8. Create a branch/worktree for that task.
+9. Implement only allowed files.
+10. Run required tests.
+11. Convert the same PR to ready with WorkerReport.
+12. Output `[WORKER_HALT]`.
+13. Stop the current task.
 
 ## Absolute Rules
 
@@ -50,22 +60,70 @@ V5 product code must never read:
 - `docs/harness/tasks/**`
 - V4 `handover/evidence/**`
 
-## Polling Loop
+## Single-shot Smoke Lifecycle
 
-When idle:
+H0 smoke workers run one task and then stop. Do not run a `while true` worker
+loop, automatic re-entry, or background task scanner during this phase.
+
+## Worker Profile
+
+`worker_slot` is declared by the CLI launch prompt. If absent, use
+`worker-unknown-<timestamp>`.
+
+Default profile:
+
+- `allowed_class = 1`
+- `capabilities = ["docs", "harness"]`
+
+Brand adapters are profile hints only. Task selection is controlled by
+`required_capabilities` and `preferred_capabilities`, not brand assignment.
+
+## Draft PR Claim
+
+Before claiming:
 
 ```bash
 git fetch origin
-git switch main
-git pull --ff-only
-cat AGENT_ENTRY.md
-cat AGENTS.md
-cat docs/harness/WORKER_HARNESS.md
-cat docs/harness/broadcast/TASK_BOARD.json
+jq . docs/harness/broadcast/TASK_BOARD.json
 gh pr list --state open
 ```
 
-Then choose the highest-priority eligible task.
+Skip any atom with an active valid claim.
+
+Claim branch:
+
+```text
+work/<atom_id>/<worker_slot>
+```
+
+Claim worktree:
+
+```text
+/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>
+```
+
+Create the worktree from latest `origin/main`, not from a local stale branch.
+Open a draft PR with this title:
+
+```text
+[CLAIM][<atom_id>][ClassX] <task title>
+```
+
+The claim PR body must include ClaimRecord, board version/hash, TaskPacket
+path/hash, allowed files, forbidden files, worker profile, and claim timestamp.
+
+Do not open a separate implementation PR. Continue work in the same draft PR,
+then run `gh pr ready` when the WorkerReport is complete.
+
+The end of a worker task is:
+
+1. Draft PR claimed.
+2. Same PR marked ready with `gh pr ready`.
+3. WorkerReport submitted.
+4. `[WORKER_HALT]` printed.
+5. Process stopped.
+
+Continuation requires Meta to publish a continuation or repair TaskPacket.
 
 ## Eligibility
 
@@ -73,6 +131,8 @@ A task is eligible only if:
 
 - `status == "open"`
 - `self_select == true`
+- `claim_required == true`
+- `claim_method == "draft_pr"`
 - `class <= worker_allowed_class`
 - required capabilities match your worker profile
 - blockers are empty
@@ -85,9 +145,3 @@ A task is eligible only if:
 - Class 2: soft lease required; open draft PR early.
 - Class 3: only if `self_select == true` and `meta_opened == true`.
 - Class 4: never self-select.
-
-## PR Ends Current Task
-
-After opening PR and submitting WorkerReport, stop the current task.
-
-Do not keep editing unless Meta publishes a continuation or repair task.

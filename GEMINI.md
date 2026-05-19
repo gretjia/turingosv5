@@ -10,8 +10,10 @@ Read first:
 4. `docs/harness/VETO_AI_POLICY.md` if assigned audit or Veto work
 5. Your TaskPacket or ReviewPacket
 
-Gemini is preferred for QA, adversarial review, negative tests, CI checks, risk
-review, and Veto-style constitutional inspection.
+Gemini is a worker profile suggestion for QA, adversarial review, negative
+tests, CI checks, risk review, and Veto-style constitutional inspection. Task
+selection is controlled by `required_capabilities` and
+`preferred_capabilities`, not by brand assignment.
 
 Gemini does not merge PRs and does not final-audit its own implementation PR.
 

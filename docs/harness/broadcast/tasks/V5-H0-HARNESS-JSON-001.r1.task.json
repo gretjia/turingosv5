@@ -1,0 +1,55 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-H0-HARNESS-JSON-001",
+  "revision": 1,
+  "title": "Harden TASK_BOARD JSON and schema smoke",
+  "phase": "V5-H0",
+  "lane": "Harness",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Keep TASK_BOARD JSON parseable and strengthen the board schema without giving workers write access to TASK_BOARD.json.",
+  "context": "TASK_BOARD.json is Meta-only. Workers may harden schemas and tests around it.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": [
+    "harness",
+    "json",
+    "schema",
+    "qa"
+  ],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": [],
+  "allowed_files": [
+    "docs/harness/schemas/task_board.schema.json",
+    "tests/harness_task_board.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**"
+  ],
+  "required_behavior": [
+    "Do not edit TASK_BOARD.json",
+    "Preserve Meta-only board authorship",
+    "Keep H0 smoke tasks capability-selected"
+  ],
+  "acceptance_tests": [
+    "jq . docs/harness/broadcast/TASK_BOARD.json",
+    "cargo test --test harness_task_board"
+  ],
+  "visible_gates": [
+    "board_json_parseable",
+    "harness_task_board"
+  ],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not modify runtime code",
+    "Do not add dependencies",
+    "Do not edit TASK_BOARD.json"
+  ],
+  "rollback_plan": "Revert the schema/test-only PR."
+}

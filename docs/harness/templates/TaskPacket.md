@@ -4,6 +4,24 @@
 
 <goal>
 
+## Capability Match
+
+Required:
+
+- <capability>
+
+Preferred:
+
+- <capability>
+
+## Claim
+
+- `claim_required: true`
+- `claim_method: "draft_pr"`
+- branch: `work/<atom_id>/<worker_slot>`
+- worktree: `/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>`
+- PR title: `[CLAIM][<atom_id>][ClassX] <task title>`
+
 ## Allowed Files
 
 - <path>
@@ -19,6 +37,12 @@
 ```bash
 git diff --check
 ```
+
+## Harness Guards
+
+- `worker_halt_required: true`
+- `max_repair_attempts: 3`
+- `conflict_policy: "supersede_on_dirty"`
 
 ## Non-goals
 

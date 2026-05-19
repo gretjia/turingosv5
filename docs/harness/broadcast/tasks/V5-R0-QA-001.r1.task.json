@@ -11,6 +11,9 @@
   "context": "Class 3 QA task is listed but not self-selectable until Meta opens it.",
   "assigned_mode": "direct_assignment",
   "required_capabilities": ["qa", "tests"],
+  "claim_required": false,
+  "claim_method": "none",
+  "preferred_capabilities": [],
   "allowed_files": ["tests/constitution_no_new_parallel_substrate.rs"],
   "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json"],
   "required_behavior": [
@@ -20,6 +23,9 @@
   "acceptance_tests": ["cargo test --test constitution_no_new_parallel_substrate"],
   "visible_gates": ["no_new_parallel_substrate"],
   "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
   "non_goals": ["Do not self-select this task", "Do not change runtime code without assignment"],
   "evidence_path": "handover/evidence/v5_dev/<run_id>",
   "rollback_plan": "Revert the QA PR."

@@ -24,8 +24,10 @@ Codex Worker starts from:
 3. `docs/harness/WORKER_HARNESS.md`
 4. TaskPacket
 
-Codex Worker is suitable for Rust implementation, web routes, tests, CI fixes,
-and small refactors.
+Codex Worker is a worker profile suggestion for Rust implementation, tests, CI
+fixes, and small refactors. Task selection is controlled by
+`required_capabilities` and `preferred_capabilities`, not by brand assignment.
 
 Codex Worker must not merge, final-audit its own PR, edit `TASK_BOARD.json`, or
-self-select Class 4.
+self-select Class 4. After opening a PR and submitting WorkerReport, Codex
+Worker must output `[WORKER_HALT]` and stop.

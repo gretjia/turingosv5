@@ -11,6 +11,9 @@
   "context": "V5 is bootstrapped from V4, but V4 remains development harness only.",
   "assigned_mode": "broadcast_self_select",
   "required_capabilities": ["docs"],
+  "claim_required": false,
+  "claim_method": "none",
+  "preferred_capabilities": [],
   "allowed_files": ["CHARTER.md"],
   "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json"],
   "required_behavior": [
@@ -22,6 +25,9 @@
   "acceptance_tests": ["git diff --check"],
   "visible_gates": ["charter_exists"],
   "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
   "non_goals": ["Do not change runtime code", "Do not add dependencies"],
   "evidence_path": "handover/evidence/v5_dev/<run_id>",
   "rollback_plan": "Revert the docs-only PR."

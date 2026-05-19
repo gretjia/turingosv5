@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use serde_json::Value;
 
@@ -18,14 +17,54 @@ fn read_json(path: impl AsRef<Path>) -> Value {
     })
 }
 
+fn required_fields<'a>(schema: &'a Value, name: &str) -> &'a Vec<Value> {
+    schema["required"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{name} schema must declare required fields"))
+}
+
+fn collect_control_plane_refs(root: &Path, dir: &Path, matches: &mut Vec<String>) {
+    if !dir.exists() {
+        return;
+    }
+
+    for entry in fs::read_dir(dir).unwrap_or_else(|err| {
+        panic!("failed to read directory {}: {err}", dir.display());
+    }) {
+        let entry = entry.expect("directory entry should be readable");
+        let path = entry.path();
+        if path.is_dir() {
+            collect_control_plane_refs(root, &path, matches);
+            continue;
+        }
+
+        let Ok(text) = fs::read_to_string(&path) else {
+            continue;
+        };
+        if text.contains("AGENT_ENTRY")
+            || text.contains("TASK_BOARD")
+            || text.contains("docs/harness/broadcast")
+        {
+            let rel = path.strip_prefix(root).unwrap_or(&path);
+            matches.push(rel.display().to_string());
+        }
+    }
+}
+
 #[test]
 fn harness_agent_entry_and_brand_adapters_point_to_shared_agents() {
     let root = repo_root();
     let entry = root.join("AGENT_ENTRY.md");
     let agents = root.join("AGENTS.md");
 
-    assert!(entry.exists(), "AGENT_ENTRY.md must exist as the single CLI entry point");
-    assert!(agents.exists(), "AGENTS.md must exist as the shared cross-agent contract");
+    assert!(
+        entry.exists(),
+        "AGENT_ENTRY.md must exist as the single CLI entry point"
+    );
+    assert!(
+        agents.exists(),
+        "AGENTS.md must exist as the shared cross-agent contract"
+    );
 
     let entry_text = fs::read_to_string(&entry).expect("AGENT_ENTRY.md should be readable");
     assert!(
@@ -59,15 +98,17 @@ fn harness_task_board_declares_meta_only_writer_and_valid_packets() {
     assert_eq!(board["board_version"], "v0.7");
     assert_eq!(board["board_writer"], "meta-only");
     assert_eq!(
-        board["runtime_boundary"]["development_control_plane_only"],
-        true,
+        board["runtime_boundary"]["development_control_plane_only"], true,
         "TASK_BOARD must be development control plane only"
     );
 
     let tasks = board["tasks"]
         .as_array()
         .expect("TASK_BOARD.tasks must be an array");
-    assert!(!tasks.is_empty(), "TASK_BOARD must publish at least one bootstrap task");
+    assert!(
+        !tasks.is_empty(),
+        "TASK_BOARD must publish at least one bootstrap task"
+    );
 
     for task in tasks {
         let atom_id = task["atom_id"].as_str().expect("task atom_id missing");
@@ -76,7 +117,10 @@ fn harness_task_board_declares_meta_only_writer_and_valid_packets() {
             .as_bool()
             .expect("task self_select missing");
         if class == 4 {
-            assert!(!self_select, "Class 4 task {atom_id} must never be self-selectable");
+            assert!(
+                !self_select,
+                "Class 4 task {atom_id} must never be self-selectable"
+            );
         }
         if class == 3 && self_select {
             assert_eq!(
@@ -99,28 +143,287 @@ fn harness_task_board_declares_meta_only_writer_and_valid_packets() {
         assert_eq!(packet["atom_id"], task["atom_id"]);
         assert_eq!(packet["revision"], task["revision"]);
         assert!(
-            packet["acceptance_tests"].as_array().is_some_and(|tests| !tests.is_empty()),
+            packet["acceptance_tests"]
+                .as_array()
+                .is_some_and(|tests| !tests.is_empty()),
             "task packet {atom_id} must declare visible acceptance tests"
         );
     }
 }
 
 #[test]
+fn harness_task_board_publishes_real_smoke_tasks_and_retires_bootstrap_tasks() {
+    let root = repo_root();
+    let board = read_json(root.join("docs/harness/broadcast/TASK_BOARD.json"));
+    let tasks = board["tasks"]
+        .as_array()
+        .expect("TASK_BOARD.tasks must be an array");
+
+    for atom_id in ["V5-R0-DOCS-001", "V5-R0-HARNESS-001"] {
+        let task = tasks
+            .iter()
+            .find(|task| task["atom_id"] == atom_id)
+            .unwrap_or_else(|| panic!("{atom_id} must remain on the board as retired history"));
+        assert_eq!(
+            task["status"], "retired",
+            "{atom_id} must be retired before the H0 smoke round"
+        );
+    }
+
+    let expected_smoke_tasks = [
+        (
+            "V5-H0-HARNESS-JSON-001",
+            ["harness", "json", "schema", "qa"].as_slice(),
+        ),
+        (
+            "V5-H0-HARNESS-SINGLESHOT-001",
+            ["harness", "docs", "worker-lifecycle"].as_slice(),
+        ),
+        (
+            "V5-H0-HARNESS-REPAIR-001",
+            ["harness", "meta-governance", "policy"].as_slice(),
+        ),
+    ];
+
+    for (atom_id, capabilities) in expected_smoke_tasks {
+        let task = tasks
+            .iter()
+            .find(|task| task["atom_id"] == atom_id)
+            .unwrap_or_else(|| panic!("{atom_id} must be published for real CLI smoke"));
+        assert_eq!(
+            task["status"], "open",
+            "{atom_id} must be worker-selectable"
+        );
+        assert_eq!(
+            task["self_select"], true,
+            "{atom_id} must be self-selectable"
+        );
+        assert_eq!(task["class"], 1, "{atom_id} must stay in harness Class 1");
+        assert_eq!(
+            task["claim_required"], true,
+            "{atom_id} must require draft PR claim"
+        );
+        assert_eq!(
+            task["claim_method"], "draft_pr",
+            "{atom_id} must claim by draft PR"
+        );
+        let required = task["required_capabilities"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{atom_id} must declare required_capabilities"));
+        for capability in capabilities {
+            assert!(
+                required.iter().any(|value| value == capability),
+                "{atom_id} must require capability {capability}"
+            );
+        }
+    }
+}
+
+#[test]
+fn harness_worker_lifecycle_is_single_shot_and_requires_halt() {
+    let root = repo_root();
+    let entry =
+        fs::read_to_string(root.join("AGENT_ENTRY.md")).expect("AGENT_ENTRY.md should be readable");
+    let worker_harness = fs::read_to_string(root.join("docs/harness/WORKER_HARNESS.md"))
+        .expect("WORKER_HARNESS.md should be readable");
+    let worker_report = fs::read_to_string(root.join("docs/harness/templates/WorkerReport.md"))
+        .expect("WorkerReport template should be readable");
+
+    let entry_lower = entry.to_ascii_lowercase();
+    assert!(
+        entry_lower.contains("single-shot"),
+        "AGENT_ENTRY.md must describe the H0 worker lifecycle as single-shot case-insensitively"
+    );
+    assert!(
+        entry.contains("[WORKER_HALT]"),
+        "AGENT_ENTRY.md must require [WORKER_HALT] after PR and WorkerReport"
+    );
+    assert!(
+        !entry.contains("Return to idle polling") && !entry.contains("## Polling Loop"),
+        "AGENT_ENTRY.md must not encourage initial idle polling during H0 smoke"
+    );
+    assert!(
+        worker_harness.contains("[WORKER_HALT]"),
+        "WORKER_HARNESS.md must require [WORKER_HALT]"
+    );
+    assert!(
+        worker_report.contains("[WORKER_HALT]"),
+        "WorkerReport template must include an explicit [WORKER_HALT] confirmation"
+    );
+}
+
+#[test]
+fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
+    let root = repo_root();
+    let entry =
+        fs::read_to_string(root.join("AGENT_ENTRY.md")).expect("AGENT_ENTRY.md should be readable");
+    let worker_harness = fs::read_to_string(root.join("docs/harness/WORKER_HARNESS.md"))
+        .expect("WORKER_HARNESS.md should be readable");
+    let task_policy = fs::read_to_string(root.join("docs/harness/TASK_BROADCAST_POLICY.md"))
+        .expect("TASK_BROADCAST_POLICY.md should be readable");
+
+    for text in [&entry, &worker_harness] {
+        assert!(
+            text.contains("cd /home/zephryj/projects/turingosv5"),
+            "workers must start intake from the V5 main directory"
+        );
+        assert!(
+            text.contains("/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>"),
+            "workers must create task code in the isolated worktree path"
+        );
+        assert!(
+            text.contains("work/<atom_id>/<worker_slot>"),
+            "workers must use the standard work branch pattern"
+        );
+        assert!(
+            text.contains("origin/main"),
+            "workers must create worktrees from latest origin/main"
+        );
+        assert!(
+            text.contains("[CLAIM][<atom_id>][ClassX] <task title>"),
+            "workers must open a draft PR claim with the standard title"
+        );
+        assert!(
+            text.contains("gh pr ready"),
+            "workers must convert the same draft PR to ready"
+        );
+    }
+
+    assert!(
+        task_policy.contains("createdAt") && task_policy.contains("earliest valid claim"),
+        "duplicate draft PR claims must use earliest createdAt valid claim"
+    );
+    assert!(
+        task_policy.contains("SUPERSEDE") && task_policy.contains("duplicate evidence"),
+        "duplicate claims must become supersede or duplicate evidence"
+    );
+}
+
+#[test]
+fn harness_claim_and_worker_report_schemas_cover_pr_intake() {
+    let root = repo_root();
+    let claim_schema = read_json(root.join("docs/harness/schemas/claim_record.schema.json"));
+    let worker_report_schema =
+        read_json(root.join("docs/harness/schemas/worker_report.schema.json"));
+    let task_board_schema = read_json(root.join("docs/harness/schemas/task_board.schema.json"));
+    let task_packet_schema = read_json(root.join("docs/harness/schemas/task_packet.schema.json"));
+
+    for field in [
+        "board_version",
+        "board_sha256",
+        "task_packet_path",
+        "task_packet_sha256",
+        "allowed_files",
+        "forbidden_files",
+        "worker_profile",
+        "claim_timestamp",
+    ] {
+        assert!(
+            required_fields(&claim_schema, "ClaimRecord")
+                .iter()
+                .any(|required| required == field),
+            "ClaimRecord schema must require {field}"
+        );
+    }
+
+    for field in ["claim_pr_url", "ready_pr_url", "worktree"] {
+        assert!(
+            required_fields(&worker_report_schema, "WorkerReport")
+                .iter()
+                .any(|required| required == field),
+            "WorkerReport schema must require {field}"
+        );
+    }
+
+    let board_task_required = task_board_schema["$defs"]["task"]["required"]
+        .as_array()
+        .expect("TaskBoard task schema must declare required fields");
+    for field in ["claim_required", "claim_method"] {
+        assert!(
+            board_task_required.iter().any(|required| required == field),
+            "TaskBoard task schema must require {field}"
+        );
+    }
+
+    for field in ["claim_required", "claim_method"] {
+        assert!(
+            required_fields(&task_packet_schema, "TaskPacket")
+                .iter()
+                .any(|required| required == field),
+            "TaskPacket schema must require {field}"
+        );
+    }
+}
+
+#[test]
+fn harness_repair_and_dirty_conflict_guards_are_declared() {
+    let root = repo_root();
+    let board = read_json(root.join("docs/harness/broadcast/TASK_BOARD.json"));
+    assert_eq!(
+        board["max_repair_attempts"], 3,
+        "TASK_BOARD must cap repair attempts at 3"
+    );
+    assert_eq!(
+        board["worker_halt_required"], true,
+        "TASK_BOARD must declare worker_halt_required"
+    );
+    assert_eq!(
+        board["conflict_policy"], "supersede_on_dirty",
+        "TASK_BOARD must quarantine dirty merge states by superseding"
+    );
+
+    let dirty_policy = fs::read_to_string(root.join("docs/harness/DIRTY_TREE_POLICY.md"))
+        .expect("DIRTY_TREE_POLICY.md should be readable");
+    assert!(
+        dirty_policy.contains("mergeStateStatus == \"dirty\"")
+            && dirty_policy.contains("SUPERSEDE"),
+        "dirty mergeStateStatus must be documented as SUPERSEDE-only"
+    );
+
+    let worker_report_schema =
+        read_json(root.join("docs/harness/schemas/worker_report.schema.json"));
+    let required = worker_report_schema["required"]
+        .as_array()
+        .expect("WorkerReport schema must declare required fields");
+    assert!(
+        required
+            .iter()
+            .any(|field| field == "worker_halt_confirmation"),
+        "WorkerReport schema must require worker_halt_confirmation"
+    );
+    assert_eq!(
+        worker_report_schema["properties"]["worker_halt_confirmation"]["const"], "[WORKER_HALT]",
+        "WorkerReport schema must require the exact [WORKER_HALT] marker"
+    );
+
+    let task_board_schema = read_json(root.join("docs/harness/schemas/task_board.schema.json"));
+    let status_enum = task_board_schema["$defs"]["task"]["properties"]["status"]["enum"]
+        .as_array()
+        .expect("TaskBoard status schema must declare enum");
+    assert!(
+        status_enum
+            .iter()
+            .any(|status| status == "BLOCKED_NEEDS_HUMAN"),
+        "repair breaker must support BLOCKED_NEEDS_HUMAN state"
+    );
+
+    let failure_playbook = fs::read_to_string(root.join("docs/harness/FAILURE_PLAYBOOK.md"))
+        .expect("FAILURE_PLAYBOOK.md should be readable");
+    assert!(
+        failure_playbook.contains("BLOCKED_NEEDS_HUMAN"),
+        "repair breaker must stop at BLOCKED_NEEDS_HUMAN after 3 repairs"
+    );
+}
+
+#[test]
 fn harness_runtime_does_not_read_agent_broadcast() {
     let root = repo_root();
-    let output = Command::new("rg")
-        .args([
-            "-n",
-            "AGENT_ENTRY|TASK_BOARD|docs/harness/broadcast",
-            "src",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("rg should be available");
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut matches = Vec::new();
+    collect_control_plane_refs(&root, &root.join("src"), &mut matches);
     assert!(
-        stdout.trim().is_empty(),
-        "V5 runtime must not read harness broadcast/control-plane files:\n{stdout}"
+        matches.is_empty(),
+        "V5 runtime must not read harness broadcast/control-plane files:\n{}",
+        matches.join("\n")
     );
 }
 

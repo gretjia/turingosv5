@@ -11,6 +11,9 @@
   "context": "Codex, Claude, Gemini, and future workers must start from the same file.",
   "assigned_mode": "broadcast_self_select",
   "required_capabilities": ["docs", "harness"],
+  "claim_required": false,
+  "claim_method": "none",
+  "preferred_capabilities": [],
   "allowed_files": ["AGENT_ENTRY.md"],
   "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json"],
   "required_behavior": [
@@ -23,6 +26,9 @@
   "acceptance_tests": ["git diff --check", "cargo test --test harness_task_board"],
   "visible_gates": ["harness_agent_entry_exists"],
   "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
   "non_goals": ["Do not implement product features", "Do not add dependencies"],
   "evidence_path": "handover/evidence/v5_dev/<run_id>",
   "rollback_plan": "Revert the harness docs PR."

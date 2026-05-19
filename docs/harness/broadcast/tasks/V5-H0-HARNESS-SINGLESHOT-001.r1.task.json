@@ -1,0 +1,55 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-H0-HARNESS-SINGLESHOT-001",
+  "revision": 1,
+  "title": "Enforce single-shot worker halt lifecycle",
+  "phase": "V5-H0",
+  "lane": "Harness",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Make the H0 worker lifecycle single-shot and require an exact [WORKER_HALT] confirmation after PR and WorkerReport.",
+  "context": "Initial smoke workers should not run an automatic polling loop.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": [
+    "harness",
+    "docs",
+    "worker-lifecycle"
+  ],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": [],
+  "allowed_files": [
+    "AGENT_ENTRY.md",
+    "docs/harness/WORKER_HARNESS.md",
+    "docs/harness/templates/WorkerReport.md",
+    "docs/harness/schemas/worker_report.schema.json",
+    "tests/harness_task_board.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**"
+  ],
+  "required_behavior": [
+    "Document single-shot lifecycle",
+    "Require [WORKER_HALT]",
+    "Do not encourage initial automatic polling"
+  ],
+  "acceptance_tests": [
+    "cargo test --test harness_task_board"
+  ],
+  "visible_gates": [
+    "harness_task_board"
+  ],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not modify runtime code",
+    "Do not add dependencies",
+    "Do not edit TASK_BOARD.json"
+  ],
+  "rollback_plan": "Revert the lifecycle docs/schema/test PR."
+}

@@ -9,9 +9,13 @@ and merge controller.
 - Maintain `docs/harness/broadcast/TASK_BOARD.json`.
 - Publish TaskPackets.
 - Reconcile open PRs with board tasks and claims.
+- Reconcile draft PR ClaimRecord data with the board.
 - Detect duplicate claims.
 - Retire or supersede completed tasks.
 - Convert failed reviews into repair tasks.
+- Enforce `max_repair_attempts: 3`.
+- Enforce `conflict_policy: "supersede_on_dirty"`.
+- Set `BLOCKED_NEEDS_HUMAN` after repair attempt 3 fails.
 - Inspect PR diffs, WorkerReports, and CI.
 - Request independent audit.
 - Request Veto-AI for Class >= 2 when required.
@@ -29,6 +33,8 @@ and merge controller.
 - No `go`, `ok`, `continue`, `继续`, or `可以` as Class 4 authorization.
 - No V5 runtime dependency on V4 evidence.
 - No acceptance of WorkerReport without diff and CI inspection.
+- No merge or same-PR repair when `mergeStateStatus == "dirty"`; decide
+  `SUPERSEDE`.
 
 ## Decision Values
 
