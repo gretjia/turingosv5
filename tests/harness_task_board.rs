@@ -558,6 +558,30 @@ fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
 }
 
 #[test]
+fn worktree_policy_uses_canonical_task_worktree_path() {
+    let root = repo_root();
+    let policy = read_text(root.join("docs/harness/WORKTREE_POLICY.md"));
+
+    assert!(
+        policy.contains("/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>"),
+        "WORKTREE_POLICY.md must use the canonical task worktree path"
+    );
+    for stale_example in [
+        "turingosv5-worker-a",
+        "turingosv5-worker-b",
+        "turingosv5-worker-c",
+        "turingosv5-claude",
+        "turingosv5-gemini",
+        "turingosv5-codex",
+    ] {
+        assert!(
+            !policy.contains(stale_example),
+            "WORKTREE_POLICY.md must not use stale sibling worktree example {stale_example}"
+        );
+    }
+}
+
+#[test]
 fn harness_claim_and_worker_report_schemas_cover_pr_intake() {
     let root = repo_root();
     let claim_schema = read_json(root.join("docs/harness/schemas/claim_record.schema.json"));
