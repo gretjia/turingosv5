@@ -1,0 +1,50 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A6-CLI-INTAKE-WRAPPER-001",
+  "revision": 1,
+  "title": "Add turingos-dev CLI intake wrapper",
+  "phase": "V5-SYS",
+  "lane": "CLI",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Expose append, board derive, and audit commands as a thin development-tool CLI wrapper.",
+  "context": "The CLI is an entrypoint, not a state owner.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["rust", "cli", "devtool", "tests"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["json"],
+  "allowed_files": [
+    "Cargo.toml",
+    "src/bin/turingos-dev.rs",
+    "src/devtool/**",
+    "tests/v5_cli_intake.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/runtime/**"
+  ],
+  "required_behavior": [
+    "No clap or new CLI dependency",
+    "May promote existing serde_json only if needed",
+    "Never default output to TASK_BOARD.json"
+  ],
+  "acceptance_tests": [
+    "cargo test --test v5_cli_intake",
+    "cargo check --workspace",
+    "cargo test --workspace"
+  ],
+  "visible_gates": ["cli_intake_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not execute merges",
+    "Do not own state in the CLI",
+    "Do not write TASK_BOARD.json by default"
+  ],
+  "rollback_plan": "Remove CLI wrapper and related tests."
+}

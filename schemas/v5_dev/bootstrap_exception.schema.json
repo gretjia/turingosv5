@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.bootstrap_exception.v0.8",
+  "title": "BootstrapException",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "exception_id",
+    "exception_type",
+    "reason",
+    "requested_by_actor_id",
+    "accepted_by_actor_id",
+    "scope",
+    "exact_v4_anchors",
+    "v5_files_affected",
+    "risk_class",
+    "replacement_path",
+    "meta_decision",
+    "expires_at_or_condition",
+    "restoration_required",
+    "restoration_evidence_cid"
+  ],
+  "properties": {
+    "exception_id": {
+      "type": "string"
+    },
+    "exception_type": {
+      "type": "string",
+      "enum": [
+        "branch_protection_bootstrap",
+        "v4_reference_read",
+        "lineage_archive_reference"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "requested_by_actor_id": {
+      "type": "string"
+    },
+    "accepted_by_actor_id": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "exact_v4_anchors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "v5_files_affected": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_class": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "replacement_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "meta_decision": {
+      "type": "string",
+      "enum": [
+        "ACCEPT",
+        "REJECT"
+      ]
+    },
+    "expires_at_or_condition": {
+      "type": "string"
+    },
+    "restoration_required": {
+      "type": "boolean",
+      "const": true
+    },
+    "restoration_evidence_cid": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A9-ACTIVE-MERGE-GATE-001",
+  "revision": 1,
+  "title": "Implement active merge gate check",
+  "phase": "V5-SYS",
+  "lane": "Gate",
+  "class": 1,
+  "priority": "P1",
+  "goal": "Implement a pure check function for active merge gate decisions without executing merges.",
+  "context": "MergeDecisionAccepted is necessary but not sufficient.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["rust", "devtool", "tests", "merge-gate"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["policy"],
+  "allowed_files": [
+    "src/devtool/**",
+    "tests/v5_active_gate.rs",
+    "docs/v5_dev/ACTIVE_MERGE_GATE_CONTRACT.md"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/runtime/**"
+  ],
+  "required_behavior": [
+    "Do not execute merge",
+    "Reject failed CI",
+    "Reject missing branch protection snapshot",
+    "Reject bootstrap exception without restore evidence"
+  ],
+  "acceptance_tests": [
+    "cargo test --test v5_active_gate",
+    "cargo test --workspace",
+    "git diff --check"
+  ],
+  "visible_gates": ["active_gate_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not run gh pr merge",
+    "Do not bypass branch protection",
+    "Do not modify TASK_BOARD.json"
+  ],
+  "rollback_plan": "Revert active gate code/tests/doc changes."
+}

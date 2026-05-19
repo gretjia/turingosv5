@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.branch_protection_snapshot.v0.8",
+  "title": "BranchProtectionSnapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "branch",
+    "captured_at",
+    "required_approving_review_count",
+    "required_checks",
+    "conversation_resolution_required",
+    "allows_force_pushes",
+    "allows_deletions"
+  ],
+  "properties": {
+    "repo": {
+      "type": "string"
+    },
+    "branch": {
+      "type": "string",
+      "const": "main"
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "required_approving_review_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "required_checks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "conversation_resolution_required": {
+      "type": "boolean"
+    },
+    "allows_force_pushes": {
+      "type": "boolean",
+      "const": false
+    },
+    "allows_deletions": {
+      "type": "boolean",
+      "const": false
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001",
+  "revision": 1,
+  "title": "Close baseline and align TuringOS System semantics",
+  "phase": "V5-SYS",
+  "lane": "Baseline",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Close the v0.8 baseline and replace misleading V4-native wording with TuringOS System Dev Mode language.",
+  "context": "This task prepares a stable baseline before Spark WorkerAI implementation starts.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["docs", "harness", "policy"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["qa"],
+  "allowed_files": [
+    "AGENTS.md",
+    "AGENT_ENTRY.md",
+    "docs/v5_dev/**",
+    "docs/harness/README.md",
+    "docs/harness/META_HARNESS.md",
+    "docs/harness/WORKER_HARNESS.md",
+    "tests/v5_*.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**"
+  ],
+  "required_behavior": [
+    "Keep provider-neutral roles",
+    "Do not claim active governance is complete",
+    "Preserve board/runtime boundary"
+  ],
+  "acceptance_tests": [
+    "rg \"V4-native|V4 governs\" docs/v5_dev docs/harness tests || true",
+    "cargo test --workspace",
+    "git diff --check"
+  ],
+  "visible_gates": ["semantic_cleanup", "workspace_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not implement DevEvent runtime",
+    "Do not edit TASK_BOARD.json",
+    "Do not touch Class 4 files"
+  ],
+  "rollback_plan": "Revert semantic documentation and tests."
+}

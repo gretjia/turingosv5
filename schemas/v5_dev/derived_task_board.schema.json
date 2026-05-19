@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.derived_task_board.v0.8",
+  "title": "DerivedTaskBoard",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "board_version",
+    "generated_at",
+    "generated_by_role",
+    "source",
+    "source_event_cids",
+    "tasks"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "turingos.v5.derived_task_board.v0.8"
+    },
+    "board_version": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generated_by_role": {
+      "type": "string",
+      "const": "MetaAI"
+    },
+    "source": {
+      "type": "string",
+      "const": "v4_devkernel_derived"
+    },
+    "source_event_cids": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "atom_id",
+          "status",
+          "source_event_cids"
+        ],
+        "properties": {
+          "atom_id": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "lane": {
+            "type": "string"
+          },
+          "class": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "task_packet": {
+            "type": "string"
+          },
+          "claim_required": {
+            "type": "boolean"
+          },
+          "claim_method": {
+            "type": "string"
+          },
+          "pr_number": {
+            "type": "integer"
+          },
+          "ci": {
+            "type": "string"
+          },
+          "review": {
+            "type": "string"
+          },
+          "veto": {
+            "type": "string"
+          },
+          "merge_decision": {
+            "type": "string"
+          },
+          "source_event_cids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

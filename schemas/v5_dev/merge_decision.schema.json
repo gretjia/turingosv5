@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.merge_decision.v0.8",
+  "title": "MergeDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pr_number",
+    "atom_id",
+    "decision",
+    "required_ci_passed",
+    "review_passed",
+    "veto_passed",
+    "branch_protection_satisfied",
+    "conversation_resolution",
+    "author_final_audit",
+    "forbidden_files_touched",
+    "class4_touched",
+    "class4_ratified_when_touched",
+    "task_event_cid",
+    "role_assignment_event_cid",
+    "worker_report_event_cid",
+    "pr_created_event_cid",
+    "ci_result_event_cid",
+    "review_verdict_event_cid",
+    "veto_verdict_event_cid",
+    "branch_protection_snapshot_cid",
+    "merge_decision_event_cid",
+    "bootstrap_exception_event_cid"
+  ],
+  "properties": {
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "atom_id": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "PROCEED",
+        "HOLD",
+        "VETO",
+        "SUPERSEDE"
+      ]
+    },
+    "required_ci_passed": {
+      "type": "boolean"
+    },
+    "review_passed": {
+      "type": "boolean"
+    },
+    "veto_passed": {
+      "type": "boolean"
+    },
+    "branch_protection_satisfied": {
+      "type": "boolean"
+    },
+    "conversation_resolution": {
+      "type": "boolean"
+    },
+    "author_final_audit": {
+      "type": "boolean",
+      "const": false
+    },
+    "forbidden_files_touched": {
+      "type": "boolean",
+      "const": false
+    },
+    "class4_touched": {
+      "type": "boolean"
+    },
+    "class4_ratified_when_touched": {
+      "type": "boolean"
+    },
+    "task_event_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "role_assignment_event_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "worker_report_event_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "pr_created_event_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "ci_result_event_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "review_verdict_event_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "veto_verdict_event_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "branch_protection_snapshot_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "merge_decision_event_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "bootstrap_exception_event_cid": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 8,
+          "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "PROCEED"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "required_ci_passed": {
+            "const": true
+          },
+          "review_passed": {
+            "const": true
+          },
+          "veto_passed": {
+            "const": true
+          },
+          "branch_protection_satisfied": {
+            "const": true
+          },
+          "conversation_resolution": {
+            "const": true
+          },
+          "author_final_audit": {
+            "const": false
+          },
+          "forbidden_files_touched": {
+            "const": false
+          }
+        },
+        "anyOf": [
+          {
+            "properties": {
+              "class4_touched": {
+                "const": false
+              }
+            }
+          },
+          {
+            "properties": {
+              "class4_ratified_when_touched": {
+                "const": true
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

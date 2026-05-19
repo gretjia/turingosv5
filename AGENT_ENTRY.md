@@ -46,7 +46,8 @@ is not read as runtime truth or as a universal role assignment.
 - PR is Candidate.
 - CI/Veto/Meta decide accepted state.
 - Never push to main.
-- Never merge PR.
+- Unassigned intake sessions must not merge PRs.
+- Explicit MetaAI role sessions may merge only after all required gates pass.
 - Never modify forbidden files.
 - Never edit `TASK_BOARD.json`.
 - Never add dependencies unless the task explicitly allows it.
@@ -57,6 +58,8 @@ is not read as runtime truth or as a universal role assignment.
 - Never self-select Class 4.
 - Never let V5 runtime depend on V4 evidence/genesis/local paths.
 - Never treat MiniF2F as a V5 product asset or default test corpus.
+- For implementation or review work, apply
+  `docs/agent_skills/KARPATHY_SIMPLE_CODE.md`.
 
 ## Task Board Boundary
 

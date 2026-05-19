@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.pr_created.v0.8",
+  "title": "PRCreated",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repo",
+    "pr_number",
+    "pr_url",
+    "base",
+    "head",
+    "head_sha",
+    "task_cid",
+    "diff_cid"
+  ],
+  "properties": {
+    "repo": {
+      "type": "string"
+    },
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "pr_url": {
+      "type": "string"
+    },
+    "base": {
+      "type": "string",
+      "const": "main"
+    },
+    "head": {
+      "type": "string"
+    },
+    "head_sha": {
+      "type": "string"
+    },
+    "task_cid": {
+      "type": "string"
+    },
+    "diff_cid": {
+      "type": "string"
+    }
+  }
+}

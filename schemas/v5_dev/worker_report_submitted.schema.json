@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.worker_report_submitted.v0.8",
+  "title": "WorkerReportSubmitted",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "atom_id",
+    "claim_pr_url",
+    "ready_pr_url",
+    "worktree",
+    "files_changed",
+    "tests_run",
+    "forbidden_files_touched",
+    "class4_touched",
+    "worker_halt_confirmation"
+  ],
+  "properties": {
+    "atom_id": {
+      "type": "string"
+    },
+    "claim_pr_url": {
+      "type": "string"
+    },
+    "ready_pr_url": {
+      "type": "string"
+    },
+    "worktree": {
+      "type": "string"
+    },
+    "files_changed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests_run": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "forbidden_files_touched": {
+      "type": "boolean",
+      "const": false
+    },
+    "class4_touched": {
+      "type": "boolean",
+      "const": false
+    },
+    "worker_halt_confirmation": {
+      "type": "string",
+      "const": "[WORKER_HALT]"
+    }
+  }
+}

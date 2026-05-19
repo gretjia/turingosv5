@@ -11,5 +11,5 @@ Verification output:
 Required verdict format:
 
 ```text
-PROCEED | CHALLENGE | VETO
+PASS | HOLD | VETO
 ```

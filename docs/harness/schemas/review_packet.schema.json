@@ -11,6 +11,6 @@
     "pr": { "type": "string" },
     "diff": { "type": "string" },
     "evidence": { "type": "array", "items": { "type": "string" } },
-    "required_verdict_format": { "enum": ["PROCEED | CHALLENGE | VETO"] }
+    "required_verdict_format": { "enum": ["PASS | HOLD | VETO"] }
   }
 }

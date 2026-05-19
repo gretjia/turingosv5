@@ -1,0 +1,48 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A11-AUDIT-VETO-001",
+  "revision": 1,
+  "title": "Run final read-only audit and veto",
+  "phase": "V5-SYS",
+  "lane": "Audit",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Perform read-only AuditorAI and VetoAI review of the DevTape v1.0 wave.",
+  "context": "This task changes no files and validates the whole wave before GO.",
+  "assigned_mode": "meta_direct",
+  "required_capabilities": ["audit", "veto", "qa"],
+  "claim_required": false,
+  "claim_method": "none",
+  "preferred_capabilities": ["meta-governance"],
+  "allowed_files": [],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/**",
+    "docs/**",
+    "tests/**"
+  ],
+  "required_behavior": [
+    "No file edits",
+    "Report AUDIT_VERDICT",
+    "Report VETO_VERDICT",
+    "List blocking issues if any"
+  ],
+  "acceptance_tests": [
+    "jq . docs/harness/broadcast/TASK_BOARD.json",
+    "git diff --check",
+    "cargo test --workspace"
+  ],
+  "visible_gates": ["audit_pass", "veto_pass"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not edit files",
+    "Do not author final code changes",
+    "Do not merge without gates"
+  ],
+  "rollback_plan": "No code rollback; keep audit evidence and address findings."
+}

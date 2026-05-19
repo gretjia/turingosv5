@@ -1,0 +1,52 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-SYS-A4-MICRO-DEVTAPE-001",
+  "revision": 1,
+  "title": "Implement Micro DevTape proof",
+  "phase": "V5-SYS",
+  "lane": "DevTool",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Implement a tiny Rust DevTape proof for DevEvent order, previous linkage, board projection, and merge candidate derivation.",
+  "context": "This is a development-tool proof, not V5 runtime substrate.",
+  "assigned_mode": "broadcast_self_select",
+  "required_capabilities": ["rust", "devtool", "tests"],
+  "claim_required": true,
+  "claim_method": "draft_pr",
+  "preferred_capabilities": ["devtape"],
+  "allowed_files": [
+    "src/devtool/**",
+    "src/lib.rs",
+    "tests/v5_micro_dev_tape.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/runtime/**",
+    "src/cas.rs",
+    "src/hash.rs"
+  ],
+  "required_behavior": [
+    "Use std only",
+    "Keep runtime_truth false",
+    "Do not implement full CAS",
+    "Do not create canonical substrate"
+  ],
+  "acceptance_tests": [
+    "cargo test --test v5_micro_dev_tape",
+    "cargo check --workspace",
+    "cargo test --workspace"
+  ],
+  "visible_gates": ["micro_devtape_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": true,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not parse JSON yet",
+    "Do not add dependencies",
+    "Do not write TASK_BOARD.json"
+  ],
+  "rollback_plan": "Remove src/devtool module and micro DevTape tests."
+}

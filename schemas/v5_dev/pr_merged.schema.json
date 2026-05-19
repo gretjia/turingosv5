@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.pr_merged.v0.8",
+  "title": "PRMerged",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pr_number",
+    "merge_method",
+    "main_before",
+    "main_after",
+    "merge_commit_sha",
+    "merge_decision_cid"
+  ],
+  "properties": {
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "merge_method": {
+      "type": "string",
+      "enum": [
+        "squash"
+      ]
+    },
+    "main_before": {
+      "type": "string"
+    },
+    "main_after": {
+      "type": "string"
+    },
+    "merge_commit_sha": {
+      "type": "string"
+    },
+    "merge_decision_cid": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.review_verdict_submitted.v0.8",
+  "title": "ReviewVerdictSubmitted",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pr_number",
+    "verdict",
+    "reviewer_identity_cid",
+    "author_identity_cid",
+    "author_is_reviewer",
+    "blocking_issues",
+    "non_blocking_issues",
+    "review_body_cid"
+  ],
+  "properties": {
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "HOLD",
+        "VETO"
+      ]
+    },
+    "reviewer_identity_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "author_identity_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    },
+    "author_is_reviewer": {
+      "type": "boolean",
+      "const": false
+    },
+    "blocking_issues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "non_blocking_issues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "review_body_cid": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^((cid|sha256):[A-Za-z0-9._:-]{4,}|[A-Za-z0-9][A-Za-z0-9._:-]{7,})$"
+    }
+  }
+}
