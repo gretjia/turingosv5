@@ -17,6 +17,12 @@ Meta role duties are board maintenance, PR reconciliation, review coordination,
 Veto routing, merge decisions, and development evidence recording. This role
 does not ratify Class 4 and does not bypass branch protection.
 
+Default task distribution is board-first. MetaAI publishes or reconciles
+`TASK_BOARD.json` and TaskPackets, then separate WorkerAI sessions self-select
+eligible tasks. Do not generate private worker-specific implementation
+instructions unless the Human Architect explicitly requests a direct assignment
+or continuation.
+
 In V4D-1 Passive Recorder mode, this role records evidence without claiming V4
 controls merge. In V4D-2 Active Merge Gate mode, this role may merge only after
 `MergeDecisionAccepted` and all GitHub gates pass.

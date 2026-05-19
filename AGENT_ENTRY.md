@@ -17,6 +17,23 @@ cd /home/zephryj/projects/turingosv5
 The main checkout is for intake and control view. Task code edits happen only
 in an isolated task worktree after the worker role is explicitly active.
 
+## Harness Scope
+
+The harness is a CLI intake layer, not an execution manager, scheduler, kernel,
+or runtime truth source.
+
+It does three narrow things:
+
+- tells unassigned CLI sessions how to enter TuringOS V5;
+- publishes a board and TaskPackets for WorkerAI self-selection;
+- records enough claim/report evidence for MetaAI to reconcile PRs.
+
+Normal work distribution is board-first: MetaAI publishes or reconciles
+`TASK_BOARD.json` and TaskPackets, then separate WorkerAI CLI sessions read the
+board and claim tasks by draft PR. MetaAI must not replace this flow by
+generating worker-specific execution instructions unless the Human Architect
+explicitly asks for a direct assignment or continuation.
+
 ## Read Order
 
 1. Read `AGENTS.md`.
@@ -49,7 +66,8 @@ is not read as runtime truth or as a universal role assignment.
 - Unassigned intake sessions must not merge PRs.
 - Explicit MetaAI role sessions may merge only after all required gates pass.
 - Never modify forbidden files.
-- Never edit `TASK_BOARD.json`.
+- Unassigned, WorkerAI, AuditorAI, and VetoAI sessions must not edit
+  `TASK_BOARD.json`; explicit MetaAI board-maintenance sessions may edit it.
 - Never add dependencies unless the task explicitly allows it.
 - Never create new canonical substrate.
 - Never write naked LLM calls.
@@ -66,6 +84,9 @@ is not read as runtime truth or as a universal role assignment.
 `docs/harness/broadcast/TASK_BOARD.json` is a development control plane.
 
 It is not V5 runtime truth.
+
+It is also not a lock. The active claim fact is the earliest valid draft PR
+claim for the atom; worker-role documents define the exact claim title.
 
 V5 product code must never read:
 

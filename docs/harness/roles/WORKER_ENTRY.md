@@ -29,6 +29,13 @@ If the launch prompt does not declare capabilities, use the neutral
 `default_worker_profile` published in `docs/harness/broadcast/TASK_BOARD.json`.
 It is a smoke harness profile, not tied to any CLI label.
 
+## Claim Before Code
+
+Workers must claim before implementation. The first durable public signal for a
+task is the draft PR claim, not local edits, local branches, or private notes.
+
+If a WorkerAI cannot create a draft PR claim, it must not implement the task.
+
 ## Single-Shot Lifecycle
 
 H0 smoke worker role sessions run one task and then stop. Do not run a
@@ -62,6 +69,23 @@ gh pr list --state open
 ```
 
 Skip any atom with an active valid claim.
+
+For the selected atom, use a two-check claim sequence:
+
+1. Check open PRs before creating the worktree. If any valid claim already
+   exists for the atom, skip it.
+2. Create the branch and worktree from latest `origin/main`.
+3. Before making any implementation edit, check open PRs for the same atom
+   again.
+4. If another valid claim appeared, stop immediately and output
+   `[WORKER_HALT]`.
+5. Open the draft claim PR before implementation work.
+6. After the draft PR exists, refresh open PRs. If an earlier valid claim exists
+   by `createdAt`, mark the current PR as duplicate/superseded when possible,
+   output `[WORKER_HALT]`, and stop.
+
+Only the earliest valid claim may proceed to implementation. Duplicate claims
+are evidence; they are not accepted state and must not continue coding.
 
 The claim PR body must include ClaimRecord, board version/hash, TaskPacket
 path/hash, allowed files, forbidden files, worker profile, and claim timestamp.

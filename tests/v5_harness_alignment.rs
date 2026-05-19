@@ -45,6 +45,50 @@ fn unassigned_entry_blocks_merge_but_explicit_meta_can_merge_after_gates() {
 }
 
 #[test]
+fn harness_is_intake_layer_not_worker_execution_manager() {
+    let readme = read_text("README.md");
+    let harness_readme = read_text("docs/harness/README.md");
+    let entry = read_text("AGENT_ENTRY.md");
+    let meta_entry = read_text("docs/harness/roles/META_ENTRY.md");
+    let meta_harness = read_text("docs/harness/META_HARNESS.md");
+    let worker_prompt = read_text("docs/harness/boot_prompts/universal_worker.md");
+
+    for text in [&readme, &harness_readme, &entry] {
+        assert!(
+            text.contains("CLI intake layer"),
+            "top-level harness docs must define harness as intake layer"
+        );
+        assert!(
+            text.contains("not the V5 kernel")
+                || text.contains("not an execution manager, scheduler, kernel"),
+            "harness docs must not present harness as kernel/runtime authority"
+        );
+    }
+
+    for text in [&readme, &meta_entry, &meta_harness] {
+        let normalized = text.replace('\n', " ");
+        assert!(
+            text.contains("board-first"),
+            "Meta task distribution must be board-first"
+        );
+        assert!(
+            normalized.contains("private worker-specific")
+                || normalized.contains("private MetaAI execution instructions"),
+            "Meta must not replace board flow with private worker execution instructions"
+        );
+    }
+
+    assert!(
+        worker_prompt.contains("Do not wait for private MetaAI execution instructions"),
+        "worker boot prompt must direct workers to the board, not private Meta instructions"
+    );
+    assert!(
+        !harness_readme.contains("turns multi-CLI development into candidate state transitions"),
+        "harness README must not overstate the harness as a state-transition system"
+    );
+}
+
+#[test]
 fn meta_harness_distinguishes_passive_recorder_from_active_gate() {
     let meta = read_text("docs/harness/META_HARNESS.md");
     assert!(meta.contains("V4D-1 Passive Recorder"));

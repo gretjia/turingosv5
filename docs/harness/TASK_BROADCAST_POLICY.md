@@ -1,6 +1,7 @@
 # Task Broadcast Policy
 
-`TASK_BOARD.json` is the development control plane. It is not V5 runtime truth.
+`TASK_BOARD.json` is the development control plane. It is not V5 runtime truth,
+and it is not a worker lock service.
 
 Workers may read it. Workers may not modify it.
 
@@ -40,6 +41,20 @@ Valid claim title:
 
 When multiple draft PRs claim the same atom, the earliest valid claim by
 `createdAt` wins. Later duplicates become `SUPERSEDE` or duplicate evidence.
+
+## Race Window
+
+Two workers can read the same board before any draft PR exists. This is allowed
+as a race condition, not as accepted parallel work.
+
+Workers reduce duplicate waste by checking open PRs before worktree creation,
+checking again before implementation edits, opening the draft claim PR before
+coding, and refreshing open PRs after the draft PR exists. If an earlier valid
+claim exists, the later worker must stop instead of continuing implementation.
+
+The board may lag behind PR claims. Meta reconciliation updates the board after
+observing PR evidence; WorkerAI sessions must use open PR claims as the live coordination signal
+during the race window.
 
 ## Claim Modes
 

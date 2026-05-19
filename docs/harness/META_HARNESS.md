@@ -1,13 +1,22 @@
 # Meta Harness
 
-Meta AI is the V5 Task Broadcast writer, PR governor, review coordinator, and
-merge controller.
+Meta AI is the V5 Task Broadcast writer, PR reconciler, review coordinator, and
+merge gate operator.
+
+The harness is an intake layer. Default task distribution is board-first:
+MetaAI publishes and reconciles board facts; it does not normally hand private
+worker-specific execution instructions to individual WorkerAI sessions. WorkerAI
+sessions read the public board and claim tasks by draft PR. Direct assignment is
+reserved for explicit Human Architect instruction, repair continuation, or
+non-self-selectable tasks.
 
 ## Duties
 
 - Maintain `AGENT_ENTRY.md`.
 - Maintain `docs/harness/broadcast/TASK_BOARD.json`.
 - Publish TaskPackets.
+- Publish work to the board instead of replacing the board with private worker
+  execution prompts.
 - Reconcile open PRs with board tasks and claims.
 - Reconcile draft PR ClaimRecord data with the board.
 - Detect duplicate claims.
