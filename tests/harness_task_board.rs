@@ -128,6 +128,21 @@ fn harness_agent_entry_and_cli_adapters_point_to_shared_agents() {
         entry_text.contains("docs/harness/broadcast/TASK_BOARD.json"),
         "AGENT_ENTRY.md must mention TASK_BOARD.json as worker role input, not as a universal role assignment"
     );
+    for worker_detail in [
+        "worker_slot",
+        "capabilities =",
+        "[CLAIM][<atom_id>][ClassX] <task title>",
+        "work/<atom_id>/<worker_slot>",
+        "gh pr ready",
+        "## Draft PR Claim",
+        "## Eligibility",
+        "## Class Rules",
+    ] {
+        assert!(
+            !entry_text.contains(worker_detail),
+            "AGENT_ENTRY.md must not contain worker-role operational detail `{worker_detail}`"
+        );
+    }
     assert_no_cli_role_assignment_language(&entry, &entry_text);
 
     for adapter in ["CLAUDE.md", "GEMINI.md", "CODEX.md"] {
@@ -254,6 +269,10 @@ fn harness_task_board_declares_meta_only_writer_and_valid_packets() {
     assert_eq!(board["board_version"], "v0.7");
     assert_eq!(board["generated_by_role"], "meta");
     assert!(
+        board["default_worker_profile"].is_object(),
+        "TASK_BOARD must publish the neutral default_worker_profile for H0 smoke"
+    );
+    assert!(
         board.get("generated_by").is_none(),
         "TASK_BOARD must not record a CLI-branded generated_by value"
     );
@@ -333,6 +352,60 @@ fn task_board_schema_records_meta_role_not_cli_generator() {
     assert_eq!(
         schema["properties"]["generated_by_role"]["const"], "meta",
         "TaskBoard generated_by_role must be a role, not a CLI label"
+    );
+    assert!(
+        required
+            .iter()
+            .any(|field| field == "default_worker_profile"),
+        "TaskBoard schema must require default_worker_profile"
+    );
+    assert!(
+        schema["properties"]["default_worker_profile"].is_object(),
+        "TaskBoard schema must define default_worker_profile"
+    );
+}
+
+#[test]
+fn default_worker_profile_can_claim_at_least_one_open_h0_task() {
+    let root = repo_root();
+    let board = read_json(root.join("docs/harness/broadcast/TASK_BOARD.json"));
+    let profile = &board["default_worker_profile"];
+    let allowed_class = profile["allowed_class"]
+        .as_u64()
+        .expect("default_worker_profile.allowed_class must be an integer");
+    let capabilities = profile["capabilities"]
+        .as_array()
+        .expect("default_worker_profile.capabilities must be an array");
+    let tasks = board["tasks"]
+        .as_array()
+        .expect("TASK_BOARD.tasks must be an array");
+
+    let eligible: Vec<_> = tasks
+        .iter()
+        .filter(|task| {
+            task["status"] == "open"
+                && task["self_select"] == true
+                && task["claim_required"] == true
+                && task["claim_method"] == "draft_pr"
+                && task["class"]
+                    .as_u64()
+                    .is_some_and(|class| class <= allowed_class)
+                && task["blockers"]
+                    .as_array()
+                    .is_some_and(|blockers| blockers.is_empty())
+                && task["required_capabilities"]
+                    .as_array()
+                    .is_some_and(|required| {
+                        required
+                            .iter()
+                            .all(|required_capability| capabilities.contains(required_capability))
+                    })
+        })
+        .collect();
+
+    assert!(
+        !eligible.is_empty(),
+        "default_worker_profile must be able to claim at least one open H0 smoke task"
     );
 }
 

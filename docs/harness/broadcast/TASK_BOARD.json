@@ -4,6 +4,19 @@
   "generated_by_role": "meta",
   "source": "V5 baseline correction",
   "board_writer": "meta-only",
+  "default_worker_profile": {
+    "allowed_class": 1,
+    "capabilities": [
+      "docs",
+      "harness",
+      "json",
+      "schema",
+      "qa",
+      "worker-lifecycle",
+      "meta-governance",
+      "policy"
+    ]
+  },
   "runtime_boundary": {
     "development_control_plane_only": true,
     "v5_runtime_must_not_read": [

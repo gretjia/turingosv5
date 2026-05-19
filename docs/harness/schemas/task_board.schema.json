@@ -8,6 +8,7 @@
     "generated_at",
     "generated_by_role",
     "board_writer",
+    "default_worker_profile",
     "runtime_boundary",
     "default_duplicate_policy",
     "max_repair_attempts",
@@ -21,6 +22,7 @@
     "generated_by_role": { "const": "meta" },
     "source": { "type": "string" },
     "board_writer": { "const": "meta-only" },
+    "default_worker_profile": { "$ref": "#/$defs/worker_profile" },
     "runtime_boundary": { "type": "object" },
     "default_duplicate_policy": { "type": "string" },
     "max_repair_attempts": { "const": 3 },
@@ -29,6 +31,18 @@
     "tasks": { "type": "array", "items": { "$ref": "#/$defs/task" } }
   },
   "$defs": {
+    "worker_profile": {
+      "type": "object",
+      "required": ["allowed_class", "capabilities"],
+      "properties": {
+        "allowed_class": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
     "task": {
       "type": "object",
       "required": [
