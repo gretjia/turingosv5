@@ -34,6 +34,8 @@ Preferred:
 - branch: `work/<atom_id>/<worker_slot>`
 - worktree: `/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>`
 - PR title: `[CLAIM][<atom_id>][ClassX] <task title>`
+- claim before code: open the draft PR claim before implementation edits
+- duplicate race rule: earliest valid draft PR by `createdAt` owns the atom
 
 ## Allowed Files
 

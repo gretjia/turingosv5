@@ -532,6 +532,8 @@ fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
         .expect("WORKER_HARNESS.md should be readable");
     let task_policy = fs::read_to_string(root.join("docs/harness/TASK_BROADCAST_POLICY.md"))
         .expect("TASK_BROADCAST_POLICY.md should be readable");
+    let task_packet = fs::read_to_string(root.join("docs/harness/templates/TaskPacket.md"))
+        .expect("TaskPacket.md should be readable");
 
     for text in [&entry, &worker_harness] {
         assert!(
@@ -560,6 +562,22 @@ fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
         );
     }
 
+    for text in [&entry, &worker_harness, &task_packet] {
+        assert!(
+            text.to_lowercase().contains("claim before code")
+                || text.to_lowercase().contains("claim first, code after"),
+            "workers must claim by draft PR before implementation"
+        );
+    }
+    assert!(
+        entry.contains("Before making any implementation edit")
+            && worker_harness.contains("before implementation edits"),
+        "workers must re-check active claims before writing implementation code"
+    );
+    assert!(
+        entry.contains("After the draft PR exists") && worker_harness.contains("Refresh open PRs"),
+        "workers must re-check claim ownership after opening the draft PR"
+    );
     assert!(
         task_policy.contains("createdAt") && task_policy.contains("earliest valid claim"),
         "duplicate draft PR claims must use earliest createdAt valid claim"
@@ -567,6 +585,12 @@ fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
     assert!(
         task_policy.contains("SUPERSEDE") && task_policy.contains("duplicate evidence"),
         "duplicate claims must become supersede or duplicate evidence"
+    );
+    assert!(
+        task_policy.contains("not a worker lock service")
+            && task_policy.contains("Race Window")
+            && task_policy.contains("live coordination signal"),
+        "task broadcast policy must describe board lag and race-safe PR claim coordination"
     );
 }
 
