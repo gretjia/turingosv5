@@ -75,8 +75,10 @@ Default profile:
 - `allowed_class = 1`
 - `capabilities = ["docs", "harness"]`
 
-Brand adapters are profile hints only. Task selection is controlled by
-`required_capabilities` and `preferred_capabilities`, not brand assignment.
+CLI adapter files are compatibility shims only. They do not grant capabilities,
+duties, audit lanes, or merge authority. Task selection is controlled by
+`required_capabilities`, `preferred_capabilities`, and explicit TaskPacket or
+Meta assignment.
 
 ## Draft PR Claim
 

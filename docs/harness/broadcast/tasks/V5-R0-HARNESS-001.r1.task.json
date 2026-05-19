@@ -8,7 +8,7 @@
   "class": 1,
   "priority": "P0",
   "goal": "Create the single CLI worker entry point for V5 Task Broadcast.",
-  "context": "Codex, Claude, Gemini, and future workers must start from the same file.",
+  "context": "All CLI sessions must start from the same file.",
   "assigned_mode": "broadcast_self_select",
   "required_capabilities": ["docs", "harness"],
   "claim_required": false,

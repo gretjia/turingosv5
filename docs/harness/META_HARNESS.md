@@ -1,7 +1,7 @@
 # Meta Harness
 
-Codex Meta AI is the V5 Task Broadcast writer, PR governor, review coordinator,
-and merge controller.
+Meta AI is the V5 Task Broadcast writer, PR governor, review coordinator, and
+merge controller.
 
 ## Duties
 

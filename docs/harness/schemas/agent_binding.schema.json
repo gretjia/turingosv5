@@ -3,11 +3,11 @@
   "$id": "https://turingos.local/schemas/agent_binding.schema.json",
   "title": "AgentBinding",
   "type": "object",
-  "required": ["schema_version", "worker_slot", "agent_brand", "worktree", "branch", "atom_id"],
+  "required": ["schema_version", "worker_slot", "cli_label", "worktree", "branch", "atom_id"],
   "properties": {
     "schema_version": { "const": "agent_binding/v0.7" },
     "worker_slot": { "type": "string" },
-    "agent_brand": { "type": "string" },
+    "cli_label": { "type": "string" },
     "worktree": { "type": "string" },
     "branch": { "type": "string" },
     "atom_id": { "type": "string" }

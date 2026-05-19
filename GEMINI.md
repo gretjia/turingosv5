@@ -1,31 +1,29 @@
 # GEMINI.md
 
-Gemini Worker/Auditor operates inside TuringOS V5 through the shared harness.
+This compatibility file routes a Gemini CLI session into the shared TuringOS V5
+harness. It does not create a separate capability lane, review lane, or merge
+authority.
 
 Read first:
 
 1. `AGENTS.md`
 2. `AGENT_ENTRY.md`
-3. `docs/harness/WORKER_HARNESS.md`
-4. `docs/harness/VETO_AI_POLICY.md` if assigned audit or Veto work
+3. `docs/harness/WORKER_HARNESS.md` for worker tasks
+4. `docs/harness/VETO_AI_POLICY.md` only when explicitly assigned Veto work
 5. Your TaskPacket or ReviewPacket
 
-Gemini is a worker profile suggestion for QA, adversarial review, negative
-tests, CI checks, risk review, and Veto-style constitutional inspection. Task
-selection is controlled by `required_capabilities` and
-`preferred_capabilities`, not by brand assignment.
+Task eligibility is determined by `docs/harness/broadcast/TASK_BOARD.json`, the
+selected TaskPacket, the declared `worker_slot`, and explicit assignment. This
+file does not provide default QA, test, risk review, Veto, implementation, or
+merge capabilities for Gemini.
 
-Gemini does not merge PRs and does not final-audit its own implementation PR.
+Boundaries:
 
-Audit focus:
-
-- forbidden files touched
-- direct worker edits to `TASK_BOARD.json`
-- naked LLM calls
-- new parallel substrate
-- runtime reads of `AGENT_ENTRY.md` or `docs/harness/broadcast/**`
-- UI/session/cache/dashboard as truth
-- hidden oracle leakage
-- Class 4 without exact ratification
-- contract drift outside Contract PR
-- accidental MiniF2F reintroduction into V5 product/CI defaults
+- Modify only files allowed by the TaskPacket.
+- Do not edit `docs/harness/broadcast/TASK_BOARD.json`.
+- Do not add dependencies unless the TaskPacket explicitly allows it.
+- Do not touch Class 4 surfaces without exact human ratification.
+- Do not merge or accept your own candidate work.
+- Do not treat MiniF2F as a V5 core task source or default test set.
+- After opening a PR and submitting WorkerReport, output `[WORKER_HALT]` and
+  stop the current task.

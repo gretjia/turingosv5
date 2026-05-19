@@ -17,6 +17,13 @@ fn read_json(path: impl AsRef<Path>) -> Value {
     })
 }
 
+fn read_text(path: impl AsRef<Path>) -> String {
+    let path = path.as_ref();
+    fs::read_to_string(path).unwrap_or_else(|err| {
+        panic!("failed to read {}: {err}", path.display());
+    })
+}
+
 fn required_fields<'a>(schema: &'a Value, name: &str) -> &'a Vec<Value> {
     schema["required"]
         .as_array()
@@ -51,8 +58,36 @@ fn collect_control_plane_refs(root: &Path, dir: &Path, matches: &mut Vec<String>
     }
 }
 
+fn assert_no_cli_role_assignment_language(path: &Path, text: &str) {
+    let lower = text.to_ascii_lowercase();
+    let forbidden = [
+        "worker profile suggestion",
+        "brand assignment",
+        "agent_brand",
+        "codex meta",
+        "codex may operate in one of two roles",
+        "codex worker",
+        "claude worker",
+        "gemini worker",
+        "gemini worker/auditor",
+        "gemini auditor",
+        "claude is not meta",
+        "final-audit",
+        "veto-style constitutional inspection",
+        "long-context synthesis",
+    ];
+
+    for phrase in forbidden {
+        assert!(
+            !lower.contains(phrase),
+            "{} must not assign role/capability lanes by CLI label; found phrase `{phrase}`",
+            path.display()
+        );
+    }
+}
+
 #[test]
-fn harness_agent_entry_and_brand_adapters_point_to_shared_agents() {
+fn harness_agent_entry_and_cli_adapters_point_to_shared_agents() {
     let root = repo_root();
     let entry = root.join("AGENT_ENTRY.md");
     let agents = root.join("AGENTS.md");
@@ -66,7 +101,7 @@ fn harness_agent_entry_and_brand_adapters_point_to_shared_agents() {
         "AGENTS.md must exist as the shared cross-agent contract"
     );
 
-    let entry_text = fs::read_to_string(&entry).expect("AGENT_ENTRY.md should be readable");
+    let entry_text = read_text(&entry);
     assert!(
         entry_text.contains("Read `AGENTS.md`") || entry_text.contains("Read `AGENTS.md`."),
         "AGENT_ENTRY.md must route all workers through AGENTS.md"
@@ -75,18 +110,69 @@ fn harness_agent_entry_and_brand_adapters_point_to_shared_agents() {
         entry_text.contains("docs/harness/broadcast/TASK_BOARD.json"),
         "AGENT_ENTRY.md must point workers at TASK_BOARD.json"
     );
+    assert_no_cli_role_assignment_language(&entry, &entry_text);
 
     for adapter in ["CLAUDE.md", "GEMINI.md", "CODEX.md"] {
         let path = root.join(adapter);
         assert!(path.exists(), "{adapter} must exist");
-        let text = fs::read_to_string(&path).unwrap_or_else(|err| {
-            panic!("failed to read {adapter}: {err}");
-        });
+        let text = read_text(&path);
         assert!(
             text.contains("AGENTS.md") && text.contains("AGENT_ENTRY.md"),
             "{adapter} must import the shared AGENTS.md and AGENT_ENTRY.md boundary"
         );
+        assert_no_cli_role_assignment_language(&path, &text);
     }
+}
+
+#[test]
+fn harness_docs_do_not_reintroduce_cli_role_lanes() {
+    let root = repo_root();
+    for rel in [
+        "AGENTS.md",
+        "README.md",
+        "HARNESS.md",
+        "docs/harness/META_HARNESS.md",
+        "docs/harness/WORKER_HARNESS.md",
+        "docs/harness/TASK_BROADCAST_POLICY.md",
+        "docs/harness/boot_prompts/universal_worker.md",
+        "docs/harness/boot_prompts/veto_ai.md",
+        "docs/harness/broadcast/tasks/V5-R0-HARNESS-001.r1.task.json",
+    ] {
+        let path = root.join(rel);
+        assert_no_cli_role_assignment_language(&path, &read_text(&path));
+    }
+
+    for rel in [
+        "docs/harness/boot_prompts/codex_meta.md",
+        "docs/harness/boot_prompts/claude_worker.md",
+        "docs/harness/boot_prompts/gemini_auditor.md",
+    ] {
+        assert!(
+            !root.join(rel).exists(),
+            "{rel} must not exist because boot prompts must not encode CLI-specific role lanes"
+        );
+    }
+}
+
+#[test]
+fn agent_binding_schema_uses_cli_label_not_brand_identity() {
+    let root = repo_root();
+    let schema_path = root.join("docs/harness/schemas/agent_binding.schema.json");
+    let schema = read_json(&schema_path);
+    let required = required_fields(&schema, "agent_binding");
+
+    assert!(
+        required.iter().any(|field| field == "cli_label"),
+        "AgentBinding must require neutral cli_label"
+    );
+    assert!(
+        !required.iter().any(|field| field == "agent_brand"),
+        "AgentBinding must not require agent_brand"
+    );
+    assert!(
+        schema["properties"].get("agent_brand").is_none(),
+        "AgentBinding must not define agent_brand"
+    );
 }
 
 #[test]

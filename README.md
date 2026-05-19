@@ -14,10 +14,9 @@ For CLI workers:
 cat AGENT_ENTRY.md
 ```
 
-For Meta:
+For explicitly assigned Meta work:
 
 ```bash
-cat CODEX.md
 cat docs/harness/META_HARNESS.md
 cat docs/harness/broadcast/TASK_BOARD.json
 ```
@@ -28,7 +27,7 @@ V5-H0 Baseline + Real CLI Smoke:
 
 - shared `AGENTS.md`
 - single `AGENT_ENTRY.md`
-- brand adapters for Codex, Claude, and Gemini
+- CLI compatibility adapters that route into the shared entrypoint
 - Task Broadcast board
 - TaskPacket/WorkerReport/MergeDecision schemas
 - PR/CI scaffolding

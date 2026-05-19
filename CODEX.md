@@ -1,33 +1,28 @@
 # CODEX.md
 
-Codex may operate in one of two roles inside TuringOS V5.
+This compatibility file routes a Codex CLI session into the shared TuringOS V5
+harness. It does not create a separate capability lane, review lane, or merge
+authority.
 
-## Codex Meta
-
-Codex Meta is the Task Broadcast writer, PR governor, review coordinator, and
-merge controller. Meta starts from:
-
-1. `AGENTS.md`
-2. `AGENT_ENTRY.md`
-3. `docs/harness/META_HARNESS.md`
-4. `docs/harness/broadcast/TASK_BOARD.json`
-
-Meta maintains TaskPackets, reconciles PRs and claims, requests independent
-audit/Veto where required, records evidence, and merges only after gates pass.
-
-## Codex Worker
-
-Codex Worker starts from:
+Read first:
 
 1. `AGENTS.md`
 2. `AGENT_ENTRY.md`
-3. `docs/harness/WORKER_HARNESS.md`
-4. TaskPacket
+3. `docs/harness/WORKER_HARNESS.md` for worker tasks
+4. `docs/harness/META_HARNESS.md` only when explicitly assigned Meta work
+5. The selected TaskPacket or ReviewPacket
 
-Codex Worker is a worker profile suggestion for Rust implementation, tests, CI
-fixes, and small refactors. Task selection is controlled by
-`required_capabilities` and `preferred_capabilities`, not by brand assignment.
+Task eligibility is determined by `docs/harness/broadcast/TASK_BOARD.json`, the
+selected TaskPacket, the declared `worker_slot`, and explicit assignment. This
+file does not provide default implementation, test, audit, or review
+capabilities for Codex.
 
-Codex Worker must not merge, final-audit its own PR, edit `TASK_BOARD.json`, or
-self-select Class 4. After opening a PR and submitting WorkerReport, Codex
-Worker must output `[WORKER_HALT]` and stop.
+Boundaries:
+
+- Modify only files allowed by the TaskPacket.
+- Do not edit `docs/harness/broadcast/TASK_BOARD.json` as a worker.
+- Do not add dependencies unless the TaskPacket explicitly allows it.
+- Do not touch Class 4 surfaces without exact human ratification.
+- Do not merge or accept your own candidate work.
+- After opening a PR and submitting WorkerReport, output `[WORKER_HALT]` and
+  stop the current task.

@@ -57,10 +57,10 @@ control plane, not V5 runtime truth.
 
 ## Meta Boundary
 
-Codex Meta maintains the task board and TaskPackets, reconciles PRs with claims,
+Meta maintains the task board and TaskPackets, reconciles PRs with claims,
 coordinates CI/review/Veto, records development evidence, and merges only after
-required gates pass. Meta may not ratify Class 4 and may not merge around branch
-protection.
+required gates pass. Meta may not ratify Class 4 and may not merge around
+branch protection.
 
 ## Risk Classes
 
