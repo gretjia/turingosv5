@@ -426,21 +426,37 @@ fn harness_task_board_publishes_final_taskbook_wave_from_devtape() {
         .is_some_and(|events| !events.is_empty()));
 
     let expected_v1_tasks = [
-        ("V5-K0-C0-REALITY-MAP-HARD-GATE-001", ["docs"].as_slice()),
-        ("V5-K0-C1-PATH-DECISION-CHRONOLOGY-001", ["docs"].as_slice()),
         (
-            "V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001",
+            "V5-K0-C0-REALITY-MAP-HARD-GATE-001",
+            "open",
             ["docs"].as_slice(),
         ),
-        ("V5-STRESS-DUPLICATE-CLAIM-001", ["docs"].as_slice()),
+        (
+            "V5-K0-C1-PATH-DECISION-CHRONOLOGY-001",
+            "open",
+            ["docs"].as_slice(),
+        ),
+        (
+            "V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001",
+            "open",
+            ["docs"].as_slice(),
+        ),
+        (
+            "V5-STRESS-DUPLICATE-CLAIM-001",
+            "merged",
+            ["docs"].as_slice(),
+        ),
     ];
 
-    for (atom_id, capabilities) in expected_v1_tasks {
+    for (atom_id, expected_status, capabilities) in expected_v1_tasks {
         let task = tasks
             .iter()
             .find(|task| task["atom_id"] == atom_id)
             .unwrap_or_else(|| panic!("{atom_id} must be published for DevTape v1.0"));
-        assert_eq!(task["status"], "open", "{atom_id} must be open");
+        assert_eq!(
+            task["status"], expected_status,
+            "{atom_id} status must replay from DevTape"
+        );
         assert!(task["class"].as_i64().is_some_and(|class| class <= 1));
         assert_eq!(
             task["claim_required"], true,
