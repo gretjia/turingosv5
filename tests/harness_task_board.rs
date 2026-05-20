@@ -708,6 +708,45 @@ fn remote_worker_prompt_documents_pr_body_rest_fallback() {
 }
 
 #[test]
+fn remote_worker_prompt_is_api_first_before_checkout() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("API-first Market Phase"),
+        "remote prompt must start market discovery through GitHub API/raw files"
+    );
+    assert!(
+        prompt.contains("repos/$REPO_NAME/contents/")
+            && prompt.contains("docs/harness/broadcast/TASK_BOARD.json"),
+        "remote prompt must fetch board files through the contents API before checkout"
+    );
+    assert!(
+        prompt.contains("git/trees/$REF?recursive=1"),
+        "remote prompt must discover task packets through GitHub tree API"
+    );
+    assert!(
+        prompt.contains("private repositories require authenticated `gh`"),
+        "remote prompt must explain private repository authentication boundary"
+    );
+
+    let market = prompt
+        .find("## API-first Market Phase")
+        .expect("market phase heading must exist");
+    let checkout = prompt
+        .find("## Checkout And Claim Phase")
+        .expect("checkout phase heading must exist");
+    let first_clone = prompt
+        .find("git clone")
+        .expect("remote prompt still needs a clone after task selection");
+
+    assert!(
+        market < checkout && checkout < first_clone,
+        "git clone must happen only after API-first task selection"
+    );
+}
+
+#[test]
 fn task_broadcast_policy_names_market_then_sandbox_phases() {
     let root = repo_root();
     let policy = read_text(root.join("docs/harness/TASK_BROADCAST_POLICY.md"));
