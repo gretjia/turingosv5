@@ -6,6 +6,7 @@ use std::fmt;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
+use std::process::Command;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppendInput {
@@ -96,6 +97,10 @@ pub type DevToolResult<T> = Result<T, DevToolError>;
 const EVENT_TYPES: &[&str] = &[
     "HumanIntentReceived",
     "MetaReconcileRecorded",
+    "WorkerFollowupRequested",
+    "BranchUpdateRequested",
+    "DuplicateClaimRecorded",
+    "MergeCheckRequested",
     "DevTaskCreated",
     "TaskBroadcasted",
     "TaskSuperseded",
@@ -1192,6 +1197,34 @@ pub fn validate_worker_sandbox_submission(dir: &Path) -> DevToolResult<Value> {
         "paths": paths,
         "runtime_truth": false
     }))
+}
+
+pub fn apply_worker_sandbox_submission(dir: &Path, worktree: &Path) -> DevToolResult<Value> {
+    let validation = validate_worker_sandbox_submission(dir)?;
+    let patch_path = dir.join("submit/candidate.patch");
+    let status = Command::new("git")
+        .arg("-C")
+        .arg(worktree)
+        .arg("apply")
+        .arg(&patch_path)
+        .status()
+        .map_err(io_error)?;
+    if !status.success() {
+        return Err(DevToolError::new("git apply failed for candidate.patch"));
+    }
+    let report = json!({
+        "decision": "PASS",
+        "applied": true,
+        "worktree": worktree.display().to_string(),
+        "paths": validation.get("paths").cloned().unwrap_or_else(|| json!([])),
+        "runtime_truth": false
+    });
+    fs::write(
+        dir.join("submit/application_report.json"),
+        serde_json::to_vec_pretty(&report).map_err(json_error)?,
+    )
+    .map_err(io_error)?;
+    Ok(report)
 }
 
 fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Value {

@@ -169,6 +169,84 @@ fn worker_sandbox_validate_accepts_allowed_patch_and_halt_report() {
 }
 
 #[test]
+fn worker_sandbox_apply_writes_allowed_patch_into_isolated_worktree() {
+    let (_dir, sandbox) = create_sandbox("apply");
+    let worktree = temp_path("apply-worktree");
+    fs::create_dir_all(worktree.join("docs")).expect("worktree docs should be created");
+    fs::write(worktree.join("docs/allowed.md"), "before\n").expect("worktree file");
+    fs::write(
+        sandbox.join("submit/candidate.patch"),
+        "diff --git a/docs/allowed.md b/docs/allowed.md\n--- a/docs/allowed.md\n+++ b/docs/allowed.md\n@@ -1 +1 @@\n-before\n+after\n",
+    )
+    .expect("patch should be written");
+    fs::write(
+        sandbox.join("submit/WorkerReport.json"),
+        r#"{"worker_halt_confirmation":"[WORKER_HALT]"}"#,
+    )
+    .expect("report should be written");
+
+    let output = Command::new(bin())
+        .args([
+            "worker",
+            "sandbox",
+            "apply",
+            "--dir",
+            sandbox.to_str().expect("utf8 sandbox"),
+            "--worktree",
+            worktree.to_str().expect("utf8 worktree"),
+        ])
+        .output()
+        .expect("sandbox apply should run");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        fs::read_to_string(worktree.join("docs/allowed.md")).expect("patched file should read"),
+        "after\n"
+    );
+    assert!(sandbox.join("submit/application_report.json").exists());
+    assert!(String::from_utf8_lossy(&output.stdout).contains("SANDBOX_APPLY_PASS"));
+}
+
+#[test]
+fn worker_sandbox_apply_refuses_forbidden_patch() {
+    let (_dir, sandbox) = create_sandbox("apply-forbidden");
+    let worktree = temp_path("apply-forbidden-worktree");
+    fs::create_dir_all(worktree.join("docs")).expect("worktree docs should be created");
+    fs::write(worktree.join("docs/allowed.md"), "before\n").expect("worktree file");
+    fs::write(
+        sandbox.join("submit/candidate.patch"),
+        "diff --git a/constitution.md b/constitution.md\n--- a/constitution.md\n+++ b/constitution.md\n@@ -1 +1 @@\n-before\n+after\n",
+    )
+    .expect("patch should be written");
+    fs::write(
+        sandbox.join("submit/WorkerReport.json"),
+        r#"{"worker_halt_confirmation":"[WORKER_HALT]"}"#,
+    )
+    .expect("report should be written");
+
+    let output = Command::new(bin())
+        .args([
+            "worker",
+            "sandbox",
+            "apply",
+            "--dir",
+            sandbox.to_str().expect("utf8 sandbox"),
+            "--worktree",
+            worktree.to_str().expect("utf8 worktree"),
+        ])
+        .output()
+        .expect("sandbox apply should run");
+
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("not in allowed_files"));
+    assert!(!sandbox.join("submit/application_report.json").exists());
+}
+
+#[test]
 fn turingos_dev_help_exits_successfully_for_worker_clients() {
     let output = Command::new(bin())
         .arg("--help")
