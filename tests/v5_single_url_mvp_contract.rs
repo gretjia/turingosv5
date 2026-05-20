@@ -23,17 +23,12 @@ fn single_url_mvp_contract_defines_ux_flow_and_refresh_restore() {
 fn single_url_mvp_contract_avoids_forbidden_stack_terms() {
     let doc = fs::read_to_string("docs/contracts/single_url_mvp.md")
         .expect("Single URL MVP contract must exist");
+    let lower = doc.to_lowercase();
 
-    assert!(
-        !doc.contains("Next.js"),
-        "Single URL MVP contract must not introduce Next.js"
-    );
-    assert!(
-        !doc.contains("Tauri"),
-        "Single URL MVP contract must not introduce Tauri"
-    );
-    assert!(
-        !doc.contains("microservice"),
-        "Single URL MVP contract must not mention microservice"
-    );
+    for forbidden in ["next.js", "tauri", "microservice"] {
+        assert!(
+            !lower.contains(forbidden),
+            "Single URL MVP contract must not mention {forbidden}"
+        );
+    }
 }
