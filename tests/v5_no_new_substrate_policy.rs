@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 fn repo_root() -> PathBuf {
@@ -8,11 +9,17 @@ fn repo_root() -> PathBuf {
 fn assert_absent(path: impl AsRef<Path>) {
     let relative = path.as_ref();
     let path = repo_root().join(relative);
-    assert!(
-        fs::metadata(&path).is_err(),
-        "{} must stay absent; use the accepted DevTape path instead of a parallel substrate",
-        relative.display()
-    );
+    match fs::symlink_metadata(&path) {
+        Ok(_) => panic!(
+            "{} must stay absent; use the accepted DevTape path instead of a parallel substrate",
+            relative.display()
+        ),
+        Err(err) if err.kind() == ErrorKind::NotFound => {}
+        Err(err) => panic!(
+            "{} absence check failed with unexpected metadata error: {err}",
+            relative.display()
+        ),
+    }
 }
 
 #[test]
