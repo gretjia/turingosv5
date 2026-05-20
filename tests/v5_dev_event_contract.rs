@@ -87,6 +87,7 @@ fn dev_event_envelope_is_required_for_payload_authority() {
 
     let event_types = enum_values(&schema, "event_type");
     for event_type in [
+        "HumanIntentReceived",
         "DevTaskCreated",
         "WorkerReportSubmitted",
         "PRCreated",

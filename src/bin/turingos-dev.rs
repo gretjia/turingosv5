@@ -4,7 +4,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::process;
 use turingosv5::devtool::{
-    append_event, audit_board_drift, derive_board, merge_check, AppendInput, MergeGateDecision,
+    append_event, audit_board_drift, console_text, derive_board, merge_check, AppendInput,
+    MergeGateDecision,
 };
 
 fn main() {
@@ -71,12 +72,29 @@ fn run() -> Result<(), String> {
                 Err("merge gate did not proceed".to_string())
             }
         }
+        [console, rest @ ..] if console == "console" => run_console(rest),
         _ => Err(usage()),
     }
 }
 
+fn run_console(args: &[String]) -> Result<(), String> {
+    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        println!("{}", console_usage());
+        return Ok(());
+    }
+    let store = optional_flag_path(args, "--store").unwrap_or_else(default_store);
+    println!("{}", console_text(&store).map_err(|err| err.to_string())?);
+    Ok(())
+}
+
 fn flag_path(args: &[String], name: &str) -> Result<PathBuf, String> {
     flag_value(args, name).map(PathBuf::from)
+}
+
+fn optional_flag_path(args: &[String], name: &str) -> Option<PathBuf> {
+    args.windows(2)
+        .find(|window| window[0] == name)
+        .map(|window| PathBuf::from(window[1].clone()))
 }
 
 fn flag_value(args: &[String], name: &str) -> Result<String, String> {
@@ -86,9 +104,25 @@ fn flag_value(args: &[String], name: &str) -> Result<String, String> {
         .ok_or_else(|| format!("missing {name}\n{}", usage()))
 }
 
+fn default_store() -> PathBuf {
+    PathBuf::from(".turingos_system/devtape/turingosv5/events.jsonl")
+}
+
+fn console_usage() -> String {
+    [
+        "usage:",
+        "  turingos-dev console [--store <events.jsonl>]",
+        "",
+        "read-only TuringOS V5 DevTape console.",
+        "Renders the DevTape-derived board projection and does not write TASK_BOARD.json.",
+    ]
+    .join("\n")
+}
+
 fn usage() -> String {
     [
         "usage:",
+        "  turingos-dev console [--store <events.jsonl>]",
         "  turingos-dev event append --file <event.json> --store <events.jsonl>",
         "  turingos-dev board derive --store <events.jsonl> --out <board.json>",
         "  turingos-dev audit --store <events.jsonl> --board <board.json>",

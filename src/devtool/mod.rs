@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppendInput {
@@ -20,6 +20,38 @@ pub struct DevTapeRecord {
     pub previous_record_hash: Option<String>,
     pub envelope: Value,
     pub payload: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdapterCommand {
+    pub program: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CodexAppServerAdapter {
+    program: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct MetaAiConfig {
+    pub schema: String,
+    pub primary_adapter: String,
+    pub openai_oauth_adapter: String,
+    pub deepseek_api_key_env: Option<String>,
+    pub deepseek_base_url: Option<String>,
+    pub deepseek_default_model: Option<String>,
+    pub deepseek_reasoning_model: Option<String>,
+    pub deepseek_legacy_alias_deprecated_after: Option<String>,
+    pub meta_ai_model: Option<String>,
+    pub meta_ai_thinking_enabled: Option<bool>,
+    pub fallback_adapter: Option<String>,
+    pub auth_profiles_path: Option<String>,
+    pub secrets_env_path: Option<String>,
+    pub provider_profile_source_url: Option<String>,
+    pub provider_profile_checked_at: Option<String>,
+    pub provider_profile_stale_after_days: u64,
+    pub stores_api_key_values: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,6 +94,7 @@ impl std::error::Error for DevToolError {}
 pub type DevToolResult<T> = Result<T, DevToolError>;
 
 const EVENT_TYPES: &[&str] = &[
+    "HumanIntentReceived",
     "DevTaskCreated",
     "TaskBroadcasted",
     "TaskClaimed",
@@ -143,6 +176,47 @@ pub fn append_event(store: &Path, input: AppendInput) -> DevToolResult<DevTapeRe
     Ok(record)
 }
 
+impl Default for CodexAppServerAdapter {
+    fn default() -> Self {
+        Self {
+            program: "codex".to_string(),
+        }
+    }
+}
+
+impl CodexAppServerAdapter {
+    pub fn stdio_command(&self) -> AdapterCommand {
+        AdapterCommand {
+            program: self.program.clone(),
+            args: vec![
+                "app-server".to_string(),
+                "--listen".to_string(),
+                "stdio://".to_string(),
+            ],
+        }
+    }
+
+    pub fn chatgpt_login_request(&self, id: u64) -> Value {
+        json!({
+            "id": id,
+            "method": "account/login/start",
+            "params": {
+                "type": "chatgpt"
+            }
+        })
+    }
+
+    pub fn device_code_login_request(&self, id: u64) -> Value {
+        json!({
+            "id": id,
+            "method": "account/login/start",
+            "params": {
+                "type": "chatgptDeviceCode"
+            }
+        })
+    }
+}
+
 pub fn read_records(store: &Path) -> DevToolResult<Vec<DevTapeRecord>> {
     if !store.exists() {
         return Ok(Vec::new());
@@ -167,6 +241,445 @@ pub fn read_records(store: &Path) -> DevToolResult<Vec<DevTapeRecord>> {
         records.push(record);
     }
     Ok(records)
+}
+
+pub fn console_text(store: &Path) -> DevToolResult<String> {
+    let mut lines = vec![
+        "TuringOS V5 Console".to_string(),
+        "mode: read-only DevTape projection".to_string(),
+        format!("store: {}", store.display()),
+        "note: console does not write TASK_BOARD.json".to_string(),
+    ];
+
+    if !store.exists() {
+        lines.push("status: DevTape not initialized".to_string());
+        lines.push(format!(
+            "next: turingos-dev event append --file <event.json> --store {}",
+            store.display()
+        ));
+        return Ok(lines.join("\n"));
+    }
+
+    let records = read_records(store)?;
+    let tip = records
+        .last()
+        .map(|record| record.record_hash.as_str())
+        .unwrap_or("none");
+    lines.push(format!("records: {}", records.len()));
+    lines.push(format!("tip: {tip}"));
+
+    let board = derive_board(store)?;
+    let empty = Vec::new();
+    let tasks = board
+        .get("tasks")
+        .and_then(Value::as_array)
+        .unwrap_or(&empty);
+    lines.push(format!("tasks: {}", tasks.len()));
+    for task in tasks {
+        let atom = task.get("atom_id").and_then(Value::as_str).unwrap_or("-");
+        let status = task.get("status").and_then(Value::as_str).unwrap_or("-");
+        let title = task.get("title").and_then(Value::as_str).unwrap_or("-");
+        let pr = task.get("pr_number").and_then(Value::as_u64);
+        match pr {
+            Some(number) => lines.push(format!("- {atom} [{status}] PR #{number}: {title}")),
+            None => lines.push(format!("- {atom} [{status}]: {title}")),
+        }
+    }
+    Ok(lines.join("\n"))
+}
+
+pub fn console_frame(store: &Path, show_help: bool) -> DevToolResult<String> {
+    let records = read_records(store)?;
+    let board = derive_board(store)?;
+    let empty = Vec::new();
+    let tasks = board
+        .get("tasks")
+        .and_then(Value::as_array)
+        .unwrap_or(&empty);
+    let tip = records
+        .last()
+        .map(|record| short_hash(&record.record_hash))
+        .unwrap_or_else(|| "none".to_string());
+    let store_status = if store.exists() {
+        "DevTape ready"
+    } else {
+        "DevTape not initialized"
+    };
+
+    let mut lines = vec![
+        "\x1b[2J\x1b[H".to_string(),
+        "+ TuringOS V5 ---------------------------------------------------------+".to_string(),
+        format!(
+            "| {store_status:<20} records: {:<5} tip: {:<22} |",
+            records.len(),
+            tip
+        ),
+        format!(
+            "| store: {:<59} |",
+            truncate(&store.display().to_string(), 59)
+        ),
+        "+ Tasks ---------------------------------------------------------------+".to_string(),
+    ];
+
+    if tasks.is_empty() {
+        lines.push(
+            "| no projected tasks yet                                             |".to_string(),
+        );
+    } else {
+        for task in tasks.iter().take(12) {
+            let atom = task.get("atom_id").and_then(Value::as_str).unwrap_or("-");
+            let status = task.get("status").and_then(Value::as_str).unwrap_or("-");
+            let title = task.get("title").and_then(Value::as_str).unwrap_or("-");
+            let pr = task
+                .get("pr_number")
+                .and_then(Value::as_u64)
+                .map(|number| format!(" PR #{number}"))
+                .unwrap_or_default();
+            lines.push(format!(
+                "| {:<25} {:<10} {:<25} |",
+                truncate(atom, 25),
+                truncate(&format!("{status}{pr}"), 10),
+                truncate(title, 25)
+            ));
+        }
+    }
+
+    lines.push(
+        "+ Commands ------------------------------------------------------------+".to_string(),
+    );
+    lines
+        .push("| [w] welcome   [r] refresh   [h] help   [q] quit                    |".to_string());
+    if show_help {
+        lines.push(
+            "+ Help ----------------------------------------------------------------+".to_string(),
+        );
+        lines.push(
+            "| This TUI is a read-only DevTape projection. It never writes board.  |".to_string(),
+        );
+        lines.push(
+            "| Use turingos-dev event append / board derive for state changes.     |".to_string(),
+        );
+    }
+    lines.push(
+        "+---------------------------------------------------------------------+".to_string(),
+    );
+    Ok(lines.join("\n"))
+}
+
+pub fn meta_ai_welcome_frame(store: &Path, config_path: &Path) -> DevToolResult<String> {
+    meta_ai_welcome_frame_with_selection(store, config_path, 0)
+}
+
+pub fn meta_ai_welcome_frame_with_selection(
+    store: &Path,
+    config_path: &Path,
+    selected: usize,
+) -> DevToolResult<String> {
+    let records = read_records(store)?;
+    let config = read_meta_ai_config(config_path).unwrap_or_default();
+    let deepseek_env = config
+        .deepseek_api_key_env
+        .as_deref()
+        .unwrap_or("DEEPSEEK_API_KEY");
+    let deepseek_model = config
+        .deepseek_default_model
+        .as_deref()
+        .unwrap_or("deepseek-v4-flash");
+    let deepseek_status = if std::env::var_os(deepseek_env).is_some() {
+        "env present"
+    } else {
+        "env missing"
+    };
+    let openai = welcome_action(
+        selected == 0,
+        "[o]",
+        "OpenAI OAuth",
+        "Start Codex app-server login; TuringOS stores no OAuth token.",
+    );
+    let deepseek = welcome_action(
+        selected == 1,
+        "[d]",
+        "DeepSeek API fallback",
+        &format!("Set fallback profile: {deepseek_env} · {deepseek_model} · {deepseek_status}."),
+    );
+    let console = welcome_action(
+        selected == 2,
+        "[c]",
+        "DevTape console",
+        &format!("Open current projection: {} record(s).", records.len()),
+    );
+
+    Ok([
+        "\x1b[2J\x1b[H".to_string(),
+        format!(
+            "{}╭────────────────────────────────────────────────────────────────────╮{}",
+            color("cyan"),
+            color("reset")
+        ),
+        format!(
+            "{}│{} {}TuringOS{}  {}MetaAI setup{}                         {}records {:<3}{} │",
+            color("cyan"),
+            color("reset"),
+            color("bold"),
+            color("reset"),
+            color("muted"),
+            color("reset"),
+            color("green"),
+            records.len(),
+            color("reset")
+        ),
+        format!(
+            "{}╰────────────────────────────────────────────────────────────────────╯{}",
+            color("cyan"),
+            color("reset")
+        ),
+        format!(
+            "{}Welcome to TuringOS{} · choose how MetaAI should connect.",
+            color("bold"),
+            color("reset")
+        ),
+        "".to_string(),
+        format!(
+            "{}Use ↑/↓ to move, Enter to confirm. Letters still work: [o] [d] [c] [q].{}",
+            color("muted"),
+            color("reset")
+        ),
+        "".to_string(),
+        openai,
+        deepseek,
+        console,
+        "".to_string(),
+        format!(
+            "{}Trust boundary{}  No secret is written to repo, DevTape, board, or WorkerReport.",
+            color("yellow"),
+            color("reset")
+        ),
+        format!(
+            "{}Provider cache{}  DeepSeek profile is a refreshable MetaAI hint, not truth.",
+            color("yellow"),
+            color("reset")
+        ),
+        "".to_string(),
+        format!(
+            "{}Footer{}  [r] refresh   [h] help   [q] quit",
+            color("muted"),
+            color("reset")
+        ),
+    ]
+    .join("\n"))
+}
+
+pub fn read_meta_ai_config(path: &Path) -> DevToolResult<MetaAiConfig> {
+    if !path.exists() {
+        return Ok(MetaAiConfig::default());
+    }
+    let text = fs::read_to_string(path).map_err(io_error)?;
+    serde_json::from_str(&text).map_err(json_error)
+}
+
+pub fn write_deepseek_fallback_config(
+    path: &Path,
+    api_key_env: &str,
+) -> DevToolResult<MetaAiConfig> {
+    write_deepseek_fallback_config_with_state_dir(path, api_key_env, &default_turingos_home())
+}
+
+pub fn write_deepseek_fallback_config_with_state_dir(
+    path: &Path,
+    api_key_env: &str,
+    state_dir: &Path,
+) -> DevToolResult<MetaAiConfig> {
+    if !is_env_var_name(api_key_env) {
+        return Err(DevToolError::new(
+            "provide an environment variable name, not an API key value",
+        ));
+    }
+    ensure_private_parent(path)?;
+    let auth_profiles_path = state_dir.join("auth-profiles.json");
+    let secrets_env_path = state_dir.join("secrets.env");
+    ensure_repo_external_path(&auth_profiles_path, "auth profile path")?;
+    ensure_repo_external_path(&secrets_env_path, "secret state path")?;
+    ensure_auth_profiles_file(&auth_profiles_path)?;
+
+    let config = MetaAiConfig {
+        schema: "turingos.v5.meta_ai_config.v1".to_string(),
+        primary_adapter: "codex_app_server".to_string(),
+        openai_oauth_adapter: "codex_app_server".to_string(),
+        deepseek_api_key_env: Some(api_key_env.to_string()),
+        deepseek_base_url: Some("https://api.deepseek.com".to_string()),
+        deepseek_default_model: Some("deepseek-v4-flash".to_string()),
+        deepseek_reasoning_model: Some("deepseek-v4-pro".to_string()),
+        deepseek_legacy_alias_deprecated_after: Some("2026-07-24".to_string()),
+        meta_ai_model: Some("deepseek-v4-pro".to_string()),
+        meta_ai_thinking_enabled: Some(true),
+        fallback_adapter: Some("deepseek_openai_compatible_proxy".to_string()),
+        auth_profiles_path: Some(auth_profiles_path.display().to_string()),
+        secrets_env_path: Some(secrets_env_path.display().to_string()),
+        provider_profile_source_url: Some("https://api-docs.deepseek.com/".to_string()),
+        provider_profile_checked_at: Some("2026-05-20".to_string()),
+        provider_profile_stale_after_days: 14,
+        stores_api_key_values: false,
+    };
+    fs::write(
+        path,
+        serde_json::to_vec_pretty(&config).map_err(json_error)?,
+    )
+    .map_err(io_error)?;
+    set_private_file(path)?;
+    Ok(config)
+}
+
+pub fn write_deepseek_secret_from_env_file(
+    source_env: &Path,
+    secrets_env: &Path,
+    key_name: &str,
+) -> DevToolResult<()> {
+    if !is_env_var_name(key_name) {
+        return Err(DevToolError::new("secret key name must be an env var name"));
+    }
+    ensure_repo_external_path(secrets_env, "secret destination")?;
+    let text = fs::read_to_string(source_env).map_err(io_error)?;
+    let value = text
+        .lines()
+        .filter_map(parse_env_line)
+        .find(|(key, _)| key == key_name)
+        .map(|(_, value)| value)
+        .ok_or_else(|| DevToolError::new(format!("{key_name} not found in env file")))?;
+    if value.trim().is_empty() {
+        return Err(DevToolError::new(format!("{key_name} is empty")));
+    }
+    ensure_private_parent(secrets_env)?;
+    fs::write(secrets_env, format!("{key_name}={value}\n")).map_err(io_error)?;
+    set_private_file(secrets_env)
+}
+
+pub fn default_turingos_home() -> PathBuf {
+    if let Some(path) = std::env::var_os("TURINGOS_HOME") {
+        return PathBuf::from(path);
+    }
+    std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(".turingos")
+}
+
+pub fn default_provider_profiles_path() -> PathBuf {
+    default_turingos_home().join("provider-profiles.json")
+}
+
+pub fn default_auth_profiles_path() -> PathBuf {
+    default_turingos_home().join("auth-profiles.json")
+}
+
+pub fn default_secrets_env_path() -> PathBuf {
+    default_turingos_home().join("secrets.env")
+}
+
+fn ensure_private_parent(path: &Path) -> DevToolResult<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(io_error)?;
+        set_private_dir(parent)?;
+    }
+    Ok(())
+}
+
+fn ensure_auth_profiles_file(path: &Path) -> DevToolResult<()> {
+    if path.exists() {
+        set_private_file(path)?;
+        return Ok(());
+    }
+    ensure_private_parent(path)?;
+    let value = json!({
+        "schema": "turingos.v5.auth_profiles.v1",
+        "profiles": {}
+    });
+    fs::write(path, serde_json::to_vec_pretty(&value).map_err(json_error)?).map_err(io_error)?;
+    set_private_file(path)
+}
+
+fn is_env_var_name(name: &str) -> bool {
+    let mut chars = name.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    if !(first == '_' || first.is_ascii_uppercase()) {
+        return false;
+    }
+    if !chars.all(|ch| ch == '_' || ch.is_ascii_uppercase() || ch.is_ascii_digit()) {
+        return false;
+    }
+    if !name.contains('_') {
+        return false;
+    }
+    name.ends_with("_KEY")
+        || name.ends_with("_API_KEY")
+        || name.ends_with("_TOKEN")
+        || name.ends_with("_SECRET")
+        || name.ends_with("_CREDENTIAL")
+}
+
+fn ensure_repo_external_path(path: &Path, label: &str) -> DevToolResult<()> {
+    let repo = repo_root().or_else(|| std::env::current_dir().ok());
+    let repo = repo.ok_or_else(|| DevToolError::new("could not determine repo boundary"))?;
+    let absolute = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        repo.join(path)
+    };
+    if absolute.starts_with(&repo) {
+        return Err(DevToolError::new(format!(
+            "{label} must be outside the repo"
+        )));
+    }
+    Ok(())
+}
+
+fn repo_root() -> Option<PathBuf> {
+    let mut dir = std::env::current_dir().ok()?;
+    loop {
+        if dir.join(".git").exists() {
+            return Some(dir);
+        }
+        if !dir.pop() {
+            return None;
+        }
+    }
+}
+
+fn parse_env_line(line: &str) -> Option<(String, String)> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() || trimmed.starts_with('#') {
+        return None;
+    }
+    let (key, value) = trimmed.split_once('=')?;
+    let value = value
+        .trim()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .to_string();
+    Some((key.trim().to_string(), value))
+}
+
+#[cfg(unix)]
+fn set_private_dir(path: &Path) -> DevToolResult<()> {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o700)).map_err(io_error)
+}
+
+#[cfg(not(unix))]
+fn set_private_dir(_path: &Path) -> DevToolResult<()> {
+    Ok(())
+}
+
+#[cfg(unix)]
+fn set_private_file(path: &Path) -> DevToolResult<()> {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o600)).map_err(io_error)
+}
+
+#[cfg(not(unix))]
+fn set_private_file(_path: &Path) -> DevToolResult<()> {
+    Ok(())
 }
 
 pub fn derive_board(store: &Path) -> DevToolResult<Value> {
@@ -270,6 +783,61 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
         "source_event_cids": all_source_hashes,
         "tasks": rows
     }))
+}
+
+fn short_hash(hash: &str) -> String {
+    hash.strip_prefix("sha256:")
+        .and_then(|rest| rest.get(..12))
+        .unwrap_or(hash)
+        .to_string()
+}
+
+fn welcome_action(selected: bool, key: &str, title: &str, detail: &str) -> String {
+    let pointer = if selected { "▸" } else { " " };
+    let accent = if selected {
+        color("blue")
+    } else {
+        color("muted")
+    };
+    let title_color = if selected {
+        color("bold")
+    } else {
+        color("reset")
+    };
+    format!(
+        "{}{} {} {:<22}{} {}{}{}",
+        accent,
+        pointer,
+        key,
+        title,
+        color("reset"),
+        title_color,
+        truncate(detail, 72),
+        color("reset")
+    )
+}
+
+fn color(name: &str) -> &'static str {
+    match name {
+        "blue" => "\x1b[38;5;75m",
+        "cyan" => "\x1b[38;5;81m",
+        "green" => "\x1b[38;5;114m",
+        "yellow" => "\x1b[38;5;179m",
+        "muted" => "\x1b[38;5;245m",
+        "bold" => "\x1b[1m",
+        "reset" => "\x1b[0m",
+        _ => "\x1b[0m",
+    }
+}
+
+fn truncate(value: &str, width: usize) -> String {
+    if value.len() <= width {
+        return value.to_string();
+    }
+    if width <= 3 {
+        return value[..width].to_string();
+    }
+    format!("{}...", &value[..width - 3])
 }
 
 pub fn audit_board_drift(store: &Path, board: &Value) -> DevToolResult<()> {

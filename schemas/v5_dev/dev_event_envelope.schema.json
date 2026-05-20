@@ -26,6 +26,7 @@
     "event_type": {
       "type": "string",
       "enum": [
+        "HumanIntentReceived",
         "DevTaskCreated",
         "TaskBroadcasted",
         "TaskClaimed",
