@@ -389,4 +389,94 @@ fn worker_sandbox_submit_rejects_failed_acceptance_gate_before_recording_report(
             .all(|record| record.envelope["event_type"] != "WorkerReportSubmitted"),
         "failed local gate must not record WorkerReportSubmitted"
     );
+    assert!(
+        records
+            .iter()
+            .any(|record| record.envelope["event_type"] == "RepairTaskCreated"),
+        "failed local gate should leave repair evidence"
+    );
+    assert!(
+        sandbox.join("submit/local_gates_report.json").exists(),
+        "failed local gate should write sandbox-visible diagnostics"
+    );
+}
+
+#[test]
+fn worker_sandbox_submit_can_retry_after_failed_local_gate() {
+    let (dir, store, repo, sandbox, atom) =
+        setup_claimed_sandbox("retry-gate", vec!["rg after docs/allowed.md"]);
+    fs::write(
+        sandbox.join("submit/candidate.patch"),
+        "diff --git a/docs/allowed.md b/docs/allowed.md\n--- a/docs/allowed.md\n+++ b/docs/allowed.md\n@@ -1 +1 @@\n-before\n+wrong\n",
+    )
+    .expect("first patch should be written");
+    fs::write(
+        sandbox.join("submit/WorkerReport.json"),
+        r#"{"worker_halt_confirmation":"[WORKER_HALT]","tests_run":["rg after docs/allowed.md"]}"#,
+    )
+    .expect("report should be written");
+
+    let worktree_root = dir.join("worktrees");
+    let first = Command::new(bin())
+        .args([
+            "worker",
+            "sandbox",
+            "submit",
+            "--dir",
+            sandbox.to_str().expect("utf8 sandbox"),
+            "--store",
+            store.to_str().expect("utf8 store"),
+            "--repo",
+            repo.to_str().expect("utf8 repo"),
+            "--worktree-root",
+            worktree_root.to_str().expect("utf8 worktree root"),
+            "--worker",
+            "worker-a",
+        ])
+        .output()
+        .expect("first sandbox submit should run");
+    assert!(!first.status.success());
+    assert!(String::from_utf8_lossy(&first.stderr).contains("local gate failed"));
+
+    fs::write(
+        sandbox.join("submit/candidate.patch"),
+        "diff --git a/docs/allowed.md b/docs/allowed.md\n--- a/docs/allowed.md\n+++ b/docs/allowed.md\n@@ -1 +1 @@\n-before\n+after\n",
+    )
+    .expect("retry patch should be written");
+
+    let retry = Command::new(bin())
+        .args([
+            "worker",
+            "sandbox",
+            "submit",
+            "--dir",
+            sandbox.to_str().expect("utf8 sandbox"),
+            "--store",
+            store.to_str().expect("utf8 store"),
+            "--repo",
+            repo.to_str().expect("utf8 repo"),
+            "--worktree-root",
+            worktree_root.to_str().expect("utf8 worktree root"),
+            "--worker",
+            "worker-a",
+        ])
+        .output()
+        .expect("retry sandbox submit should run");
+
+    assert!(
+        retry.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&retry.stderr)
+    );
+    let records = read_records(&store).expect("records should read");
+    let reports = records
+        .iter()
+        .filter(|record| record.envelope["event_type"] == "WorkerReportSubmitted")
+        .count();
+    assert_eq!(reports, 1);
+    let worktree = worktree_root.join("worker-a").join(&atom);
+    assert_eq!(
+        fs::read_to_string(worktree.join("docs/allowed.md")).expect("patched file should read"),
+        "after\n"
+    );
 }

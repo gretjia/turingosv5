@@ -1,9 +1,30 @@
 # Task Broadcast Policy
 
-`TASK_BOARD.json` is the development control plane. It is not V5 runtime truth,
-and it is not a worker lock service.
+`TASK_BOARD.json` is the development control plane and public task market. It is
+not V5 runtime truth, and it is not a worker lock service.
 
 Workers may read it. Workers may not modify it.
+
+## Market And Sandbox Phases
+
+Selection phase:
+
+- WorkerAI clients read the public task market in `TASK_BOARD.json`.
+- WorkerAI clients inspect TaskPackets and self-select one eligible task.
+- MetaAI does not privately assign a single task package unless the Human
+  Architect explicitly requests direct assignment or continuation.
+- Remote WorkerAI clients use a GitHub open PR claim overlay before choosing:
+  if an open PR title or branch already contains the atom id, the worker skips
+  that atom and chooses another eligible task.
+
+Execution phase:
+
+- After claim, context narrows to the selected TaskPacket and its
+  `allowed_files`.
+- Sandbox or sparse-checkout execution limits the working surface after
+  self-selection; it must not replace the public task market.
+- Worker output remains Candidate until MetaAI reconciles WorkerReport, CI,
+  audit, Veto, and merge decision evidence.
 
 ## Status Machine
 

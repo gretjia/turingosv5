@@ -184,3 +184,72 @@ fn meta_reconcile_holds_dirty_or_unreported_claims() {
     assert_eq!(action["action"], "hold_dirty_claim");
     assert_eq!(action["needs_worker_report"], true);
 }
+
+#[test]
+fn meta_reconcile_recognizes_sandbox_worker_prs() {
+    let board = json!({
+        "tasks": [
+            {
+                "atom_id": "V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001",
+                "status": "open"
+            }
+        ]
+    });
+    let prs = json!([
+        {
+            "number": 29,
+            "title": "[WORKER][V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001] Sandbox submission",
+            "isDraft": false,
+            "createdAt": "2026-05-20T07:00:50Z",
+            "url": "https://github.com/gretjia/turingosv5/pull/29",
+            "body": "WorkerReport\n- atom_id: V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001\n- worker_halt_confirmation: [WORKER_HALT]\n",
+            "mergeStateStatus": "CLEAN",
+            "statusCheckRollup": [
+                {"name": "ci-basic", "conclusion": "SUCCESS"},
+                {"name": "ci-constitution-light", "conclusion": "SUCCESS"}
+            ]
+        }
+    ]);
+
+    let report = meta_reconcile_report(&board, &prs).expect("report should build");
+    let action = &report["actions"][0];
+    assert_eq!(action["pr_number"], 29);
+    assert_eq!(
+        action["atom_id"],
+        "V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001"
+    );
+    assert_eq!(action["action"], "record_worker_report");
+}
+
+#[test]
+fn meta_reconcile_treats_blocked_clean_ci_as_merge_check_candidate() {
+    let board = json!({
+        "tasks": [
+            {
+                "atom_id": "V5-K0-C1-PATH-DECISION-CHRONOLOGY-001",
+                "status": "pr_open",
+                "pr_number": 28
+            }
+        ]
+    });
+    let prs = json!([
+        {
+            "number": 28,
+            "title": "[WORKER][V5-K0-C1-PATH-DECISION-CHRONOLOGY-001] Sandbox submission",
+            "isDraft": false,
+            "createdAt": "2026-05-20T07:00:21Z",
+            "url": "https://github.com/gretjia/turingosv5/pull/28",
+            "body": "WorkerReport\n- atom_id: V5-K0-C1-PATH-DECISION-CHRONOLOGY-001\n- worker_halt_confirmation: [WORKER_HALT]\n",
+            "mergeStateStatus": "BLOCKED",
+            "statusCheckRollup": [
+                {"name": "ci-basic", "conclusion": "SUCCESS"},
+                {"name": "ci-constitution-light", "conclusion": "SUCCESS"}
+            ]
+        }
+    ]);
+
+    let report = meta_reconcile_report(&board, &prs).expect("report should build");
+    let action = &report["actions"][0];
+    assert_eq!(action["pr_number"], 28);
+    assert_eq!(action["action"], "run_merge_check");
+}

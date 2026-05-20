@@ -4,11 +4,16 @@ Universal CLI workers are black-box implementers constrained by Task Broadcast.
 The harness gives intake rules; it does not dispatch workers or hold canonical
 state.
 
-Workers start from the main checkout for intake only:
+Local workers start from the main checkout for intake only:
 
 ```bash
 cd /home/zephryj/projects/turingosv5
 ```
+
+External GitHub-only workers use
+`docs/harness/boot_prompts/remote_worker_market.md`. They sparse-checkout the
+public task market, self-select an eligible task, overlay live GitHub PR claims,
+and only then narrow to the selected task's allowed context.
 
 Primary WorkerAI task code is submitted through a generated soft sandbox:
 

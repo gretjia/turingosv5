@@ -1061,7 +1061,7 @@ pub fn meta_reconcile_report(board: &Value, prs: &Value) -> DevToolResult<Value>
         if let Some(atom) = claim_atom(pr) {
             claims.entry(atom).or_default().push(pr);
         } else {
-            actions.push(pr_action(pr, Value::Null, "orphan_pr", false));
+            actions.push(pr_action(pr, None, Value::Null, "orphan_pr", false));
         }
     }
 
@@ -1069,21 +1069,26 @@ pub fn meta_reconcile_report(board: &Value, prs: &Value) -> DevToolResult<Value>
         atom_prs.sort_by_key(|pr| pr_string(pr, "createdAt"));
         for (index, pr) in atom_prs.iter().enumerate() {
             let status = task_status.get(&atom).map(String::as_str);
+            let task = tasks
+                .iter()
+                .find(|task| task.get("atom_id").and_then(Value::as_str) == Some(atom.as_str()));
             let needs_report = !has_worker_report(pr);
-            let action = if index > 0 {
-                "supersede_duplicate_claim"
-            } else if matches!(
+            let action = if matches!(
                 status,
                 Some("merged") | Some("superseded") | Some("retired")
             ) {
                 "supersede_closed_task_claim"
+            } else if pr_string(pr, "state") == "MERGED" {
+                "record_pr_merged"
+            } else if index > 0 {
+                "supersede_duplicate_claim"
             } else if pr_string(pr, "mergeStateStatus").eq_ignore_ascii_case("DIRTY") {
                 "hold_dirty_claim"
             } else if status == Some("pr_open") && !needs_report && has_failed_check(pr) {
                 "hold_failed_ci"
             } else if status == Some("pr_open")
                 && !needs_report
-                && pr_string(pr, "mergeStateStatus") != "CLEAN"
+                && pr_string(pr, "mergeStateStatus") == "BEHIND"
             {
                 "hold_until_branch_updated"
             } else if status == Some("pr_open") && !needs_report {
@@ -1097,6 +1102,7 @@ pub fn meta_reconcile_report(board: &Value, prs: &Value) -> DevToolResult<Value>
             };
             actions.push(pr_action(
                 pr,
+                task,
                 Value::String(atom.clone()),
                 action,
                 needs_report,
@@ -1277,14 +1283,8 @@ fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Val
 }
 
 fn claim_atom(pr: &Value) -> Option<String> {
-    let title = pr.get("title")?.as_str()?;
-    let rest = title.strip_prefix("[CLAIM][")?;
-    let (atom, _) = rest.split_once("]")?;
-    if atom.is_empty() {
-        None
-    } else {
-        Some(atom.to_string())
-    }
+    let title = pr.get("title").and_then(Value::as_str).unwrap_or("");
+    title_atom(title).or_else(|| pr.get("body").and_then(Value::as_str).and_then(body_atom))
 }
 
 fn has_worker_report(pr: &Value) -> bool {
@@ -1305,7 +1305,72 @@ fn has_failed_check(pr: &Value) -> bool {
         })
 }
 
-fn pr_action(pr: &Value, atom_id: Value, action: &str, needs_worker_report: bool) -> Value {
+fn title_atom(title: &str) -> Option<String> {
+    for prefix in ["[CLAIM][", "[WORKER]["] {
+        let Some(rest) = title.strip_prefix(prefix) else {
+            continue;
+        };
+        let (atom, _) = rest.split_once("]")?;
+        if !atom.is_empty() {
+            return Some(atom.to_string());
+        }
+    }
+    None
+}
+
+fn body_atom(body: &str) -> Option<String> {
+    body.lines().find_map(|line| {
+        let trimmed = line.trim().trim_start_matches('-').trim();
+        let value = trimmed.strip_prefix("atom_id:")?.trim();
+        if value.is_empty() {
+            None
+        } else {
+            Some(value.trim_matches('"').to_string())
+        }
+    })
+}
+
+fn pr_action(
+    pr: &Value,
+    task: Option<&Value>,
+    atom_id: Value,
+    action: &str,
+    needs_worker_report: bool,
+) -> Value {
+    let audit = task
+        .map(|task| deterministic_pr_audit(pr, task))
+        .unwrap_or_else(|| {
+            json!({
+                "verdict": "HOLD",
+                "reasons": ["missing task projection"],
+                "changed_files": changed_file_paths(pr)
+            })
+        });
+    let audit_passed = audit.get("verdict").and_then(Value::as_str) == Some("PASS");
+    let veto_violations = audit
+        .get("violations")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let veto_passed = audit_passed && veto_violations.is_empty();
+    let required_ci_passed = checks_passed(pr);
+    let conversation_resolution = pr
+        .get("reviewDecision")
+        .and_then(Value::as_str)
+        .is_some_and(|decision| decision == "APPROVED");
+    let merge_state_status = pr.get("mergeStateStatus").cloned().unwrap_or(Value::Null);
+    let merge_clean = merge_state_status.as_str() == Some("CLEAN");
+    let merge_decision = if required_ci_passed
+        && audit_passed
+        && veto_passed
+        && conversation_resolution
+        && merge_clean
+    {
+        "PROCEED"
+    } else {
+        "HOLD"
+    };
+
     json!({
         "pr_number": pr.get("number").cloned().unwrap_or(Value::Null),
         "url": pr.get("url").cloned().unwrap_or(Value::Null),
@@ -1314,7 +1379,28 @@ fn pr_action(pr: &Value, atom_id: Value, action: &str, needs_worker_report: bool
         "needs_worker_report": needs_worker_report,
         "is_draft": pr.get("isDraft").cloned().unwrap_or(Value::Null),
         "created_at": pr.get("createdAt").cloned().unwrap_or(Value::Null),
-        "merge_state_status": pr.get("mergeStateStatus").cloned().unwrap_or(Value::Null)
+        "state": pr.get("state").cloned().unwrap_or(Value::Null),
+        "merged_at": pr.get("mergedAt").cloned().unwrap_or(Value::Null),
+        "merge_commit_sha": pr
+            .get("mergeCommit")
+            .and_then(|commit| commit.get("oid"))
+            .cloned()
+            .unwrap_or(Value::Null),
+        "merge_state_status": merge_state_status,
+        "review_decision": pr.get("reviewDecision").cloned().unwrap_or(Value::Null),
+        "required_ci_passed": required_ci_passed,
+        "conversation_resolution": conversation_resolution,
+        "branch_protection_snapshot": format!(
+            "github-pr:{}:{}",
+            pr.get("number").and_then(Value::as_u64).unwrap_or(0),
+            pr.get("mergeStateStatus").and_then(Value::as_str).unwrap_or("UNKNOWN")
+        ),
+        "audit_verdict": audit.get("verdict").cloned().unwrap_or_else(|| json!("HOLD")),
+        "audit_reasons": audit.get("reasons").cloned().unwrap_or_else(|| json!([])),
+        "changed_files": audit.get("changed_files").cloned().unwrap_or_else(|| json!([])),
+        "veto_verdict": if veto_passed { "PASS" } else { "VETO" },
+        "veto_violations": veto_violations,
+        "merge_decision": merge_decision
     })
 }
 
@@ -1323,6 +1409,91 @@ fn pr_string(pr: &Value, key: &str) -> String {
         .and_then(Value::as_str)
         .unwrap_or("")
         .to_string()
+}
+
+fn deterministic_pr_audit(pr: &Value, task: &Value) -> Value {
+    let changed_files = changed_file_paths(pr);
+    let allowed_files = task_string_list(task, "allowed_files");
+    let forbidden_files = task_string_list(task, "forbidden_files");
+    let mut reasons = Vec::new();
+    let mut violations = Vec::new();
+
+    if changed_files.is_empty() {
+        reasons.push("PR changed files are unavailable".to_string());
+    }
+    for path in &changed_files {
+        if !allowed_files
+            .iter()
+            .any(|pattern| path_matches(pattern, path))
+        {
+            reasons.push(format!("{path} is outside allowed_files"));
+        }
+        if forbidden_files
+            .iter()
+            .any(|pattern| path_matches(pattern, path))
+        {
+            let message = format!("{path} matches forbidden_files");
+            reasons.push(message.clone());
+            violations.push(message);
+        }
+    }
+
+    json!({
+        "verdict": if reasons.is_empty() { "PASS" } else { "HOLD" },
+        "reasons": reasons,
+        "violations": violations,
+        "changed_files": changed_files
+    })
+}
+
+fn changed_file_paths(pr: &Value) -> Vec<String> {
+    pr.get("files")
+        .and_then(Value::as_array)
+        .map(|files| {
+            files
+                .iter()
+                .filter_map(|file| file.get("path").and_then(Value::as_str))
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn task_string_list(task: &Value, key: &str) -> Vec<String> {
+    task.get(key)
+        .and_then(Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn checks_passed(pr: &Value) -> bool {
+    pr.get("statusCheckRollup")
+        .and_then(Value::as_array)
+        .is_some_and(|checks| {
+            !checks.is_empty()
+                && checks.iter().all(|check| {
+                    matches!(
+                        check.get("conclusion").and_then(Value::as_str),
+                        Some("SUCCESS") | Some("NEUTRAL") | Some("SKIPPED")
+                    )
+                })
+        })
+}
+
+fn path_matches(pattern: &str, path: &str) -> bool {
+    if pattern == path {
+        return true;
+    }
+    if let Some(prefix) = pattern.strip_suffix("/**") {
+        return path == prefix || path.starts_with(&format!("{prefix}/"));
+    }
+    false
 }
 
 fn worker_task_text(task: &Value, manifest: &Value) -> String {
