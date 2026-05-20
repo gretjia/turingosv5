@@ -75,7 +75,20 @@
     "sha256:b197297d65a3e50d26d88fe6adfd1eb37cd0b1bbee0d667a203a078eb5ab3186",
     "sha256:65ee301e941a219b6866b15f86f31a17ab24cb821ed969ba873e25bc1e01fb03",
     "sha256:3304792282b9b57ee3c5fa12855224dbc364a16118658e924afc21df8157f9d6",
-    "sha256:72cd9534dd2dc38c634335725a8265bc9a5cbe0d26fbbbdb9ddc3f78f31dc9fc"
+    "sha256:72cd9534dd2dc38c634335725a8265bc9a5cbe0d26fbbbdb9ddc3f78f31dc9fc",
+    "sha256:1715330a9743a93a9af4d7b1c4fdd7bd98f82f159b2ce57f588ad9e7517dee28",
+    "sha256:c8b0b5ad8a375d3e005f8c645644ae15ee5a5a060941b46cabd9fc44cba0bfaf",
+    "sha256:0aaf43967798e3cec8496b65b5563e58c235a8ee86edafc617e5f9e9259773b2",
+    "sha256:2ac2519764f7beefe9808a62dbf0e3f61a52dd9a63b8e235921aeef1855d4ac9",
+    "sha256:f5f09a440e2b708ad0fcd03e1570f45b38e3f4f8b44ff8fd1a0b32e02db33058",
+    "sha256:634679da0aac23019f5e4d48aac27d18adf2ecf36257366544c0e37a8e9d30a8",
+    "sha256:847228bfe119b281e7d2c1260e9c28e30ebba7253fa394df7d409d424282cc82",
+    "sha256:20ded95810192c9020a1315a341f3517c80b7607051497998402273091b92da9",
+    "sha256:0f6e120604b0871a6fc535ef73122428dc57ad415308f12a623e65e22a9d7e64",
+    "sha256:c4857a87af800bdb79cb6d870bca5f6382aaf3887bc48df31c6a227f97989ffd",
+    "sha256:ea7232a65968bdf5d62b310726f03368699311558c9a1f8dd4777652194cc685",
+    "sha256:0911a37d7f2ce606e06374f43545fd753e85d3ef7e5942c5665c7ca9fd518e10",
+    "sha256:db2b7f8c7c17dd2818fd07f88c0ace1e17855467b31a67564327814cf26438b0"
   ],
   "tasks": [
     {
@@ -178,7 +191,7 @@
       "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K0",
-      "pr_number": null,
+      "pr_number": 28,
       "pr_url": null,
       "preferred_capabilities": [
         "harness"
@@ -191,10 +204,12 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:085364a1a297d9d8e3191523e389b792f84a8e30efbd6c0667e10a30e7677074",
-        "sha256:fe36484daf8d1d1498c8c9ea72bb0f3ffd00d1a924b31706586aa34ec4f9b261"
+        "sha256:fe36484daf8d1d1498c8c9ea72bb0f3ffd00d1a924b31706586aa34ec4f9b261",
+        "sha256:1715330a9743a93a9af4d7b1c4fdd7bd98f82f159b2ce57f588ad9e7517dee28",
+        "sha256:0aaf43967798e3cec8496b65b5563e58c235a8ee86edafc617e5f9e9259773b2"
       ],
       "squash_commit_sha": null,
-      "status": "open",
+      "status": "pr_open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K0-C1-PATH-DECISION-CHRONOLOGY-001.r1.task.json",
       "title": "Path decision and chronology seal"
     },
@@ -294,7 +309,7 @@
       "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K1",
-      "pr_number": null,
+      "pr_number": 29,
       "pr_url": null,
       "preferred_capabilities": [
         "tests"
@@ -307,10 +322,12 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:7351b97ddda9aabe0bac39b608fa37bf16a68c2a298e9a69c25f9da6b10b90a4",
-        "sha256:eac33126bc4acde17e95c1a643296024a1fca25e59d435d0a95df178fd323f1e"
+        "sha256:eac33126bc4acde17e95c1a643296024a1fca25e59d435d0a95df178fd323f1e",
+        "sha256:c8b0b5ad8a375d3e005f8c645644ae15ee5a5a060941b46cabd9fc44cba0bfaf",
+        "sha256:2ac2519764f7beefe9808a62dbf0e3f61a52dd9a63b8e235921aeef1855d4ac9"
       ],
       "squash_commit_sha": null,
-      "status": "open",
+      "status": "pr_open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001.r1.task.json",
       "title": "LLM call evidence inventory contract"
     },
@@ -465,15 +482,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
-      "main_after": null,
-      "merge_commit_sha": null,
+      "main_after": "59f284a9b1905851f104f9bf2ec512ce11ee33ca",
+      "merge_commit_sha": "59f284a9b1905851f104f9bf2ec512ce11ee33ca",
       "merge_decision": null,
       "merge_decision_cid": null,
-      "merge_method": null,
+      "merge_method": "squash",
       "meta_opened": true,
       "phase": "V5-K4",
-      "pr_number": null,
-      "pr_url": null,
+      "pr_number": 36,
+      "pr_url": "https://github.com/gretjia/turingosv5/pull/36",
       "preferred_capabilities": [
         "tests"
       ],
@@ -485,10 +502,12 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:83944cecf6eefd0804a2c05ad08f3df734c8e29b5b3e245fb68461ec29a4b1b2",
-        "sha256:f622d4764d9120050c9e87c95ce8d510be9a903cecae7a55317675f47c489cb3"
+        "sha256:f622d4764d9120050c9e87c95ce8d510be9a903cecae7a55317675f47c489cb3",
+        "sha256:f5f09a440e2b708ad0fcd03e1570f45b38e3f4f8b44ff8fd1a0b32e02db33058",
+        "sha256:db2b7f8c7c17dd2818fd07f88c0ace1e17855467b31a67564327814cf26438b0"
       ],
-      "squash_commit_sha": null,
-      "status": "open",
+      "squash_commit_sha": "59f284a9b1905851f104f9bf2ec512ce11ee33ca",
+      "status": "merged",
       "task_packet": "docs/harness/broadcast/tasks/V5-K4-C6-BUILD-SESSION-DERIVED-VIEW-001.r1.task.json",
       "title": "BuildSession derived view contract"
     },
