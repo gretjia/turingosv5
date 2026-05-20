@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
-use turingosv5::devtool::{append_event, read_records, AppendInput};
+use turingosv5::devtool::{append_event, derive_board, read_records, AppendInput};
 
 fn temp_path(name: &str) -> PathBuf {
     let nanos = SystemTime::now()
@@ -255,6 +255,16 @@ fn worker_sandbox_submit_commits_patch_in_isolated_worktree_and_records_report()
     assert_eq!(report.payload["worker_slot"], "worker-a");
     assert_eq!(report.payload["submission_commit_created"], true);
     assert_eq!(report.payload["pr_creation"], "not_requested");
+
+    let board = derive_board(&store).expect("board should derive");
+    let row = board["tasks"]
+        .as_array()
+        .expect("tasks array")
+        .iter()
+        .find(|task| task["atom_id"] == atom)
+        .expect("task row should exist");
+    assert_eq!(row["status"], "submitted");
+    assert_eq!(row["pr_number"], Value::Null);
 }
 
 #[test]
