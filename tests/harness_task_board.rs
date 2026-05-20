@@ -438,7 +438,7 @@ fn harness_task_board_publishes_final_taskbook_wave_from_devtape() {
         ),
         (
             "V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001",
-            "open",
+            "pr_open",
             ["docs"].as_slice(),
         ),
         (

@@ -62,7 +62,12 @@
     "sha256:b5c72ea1fe1b856ac3cb87584fb982c3e09e6b9cf4253c02b1fc234ea1a1c640",
     "sha256:738010043d48f4d06c361edf56ba4064e9216871a13cee908da18e89086d082a",
     "sha256:7ad2aca0cda8eb152282b76cce987dc068ff901acab21305ce2feb1d2b280ba6",
-    "sha256:935bba53f1ee111bc3bbc57c25af7e8cdd6c90f8c94b131aa1493f47abc6f0df"
+    "sha256:935bba53f1ee111bc3bbc57c25af7e8cdd6c90f8c94b131aa1493f47abc6f0df",
+    "sha256:de60c1ea0498b3870fee0a7dd40adf359fbd0be0d4be672a0059df1b09c0a371",
+    "sha256:1026fb50665e628913f9cb731cb97dab2bac615841d5f76b153f1c82d06948f1",
+    "sha256:e4953646315dfbc27b863354f95cac3080d78df85f3b309408419acdf4da5c89",
+    "sha256:c6c4950d98a6eb7c6917cfa2b49a779e5986841049e2c672410f533500aedaa5",
+    "sha256:bfe2b1b7b877006b4a82dada43b4efa3dca2110e71e69d4378102d498b43ac32"
   ],
   "tasks": [
     {
@@ -218,7 +223,7 @@
       "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K1",
-      "pr_number": null,
+      "pr_number": 10,
       "pr_url": null,
       "preferred_capabilities": [
         "tests"
@@ -231,10 +236,12 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:b1cc1397f1949a399b450c38ca2f924342c80a9babe56b6f60103a8d55c16a65",
-        "sha256:52d57edce0bede0b4cfe92903eef9a333b0c2f9ad22385996db0a3ac9363622f"
+        "sha256:52d57edce0bede0b4cfe92903eef9a333b0c2f9ad22385996db0a3ac9363622f",
+        "sha256:e4953646315dfbc27b863354f95cac3080d78df85f3b309408419acdf4da5c89",
+        "sha256:c6c4950d98a6eb7c6917cfa2b49a779e5986841049e2c672410f533500aedaa5"
       ],
       "squash_commit_sha": null,
-      "status": "open",
+      "status": "pr_open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001.r1.task.json",
       "title": "No-new-substrate regression checklist"
     },
@@ -333,7 +340,7 @@
       "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K2",
-      "pr_number": null,
+      "pr_number": 9,
       "pr_url": null,
       "preferred_capabilities": [
         "schema",
@@ -347,10 +354,12 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:05d8da3611962e126f3370107b066687046826326c660d0e8d1f4347a98f225c",
-        "sha256:7c367615078e1170911754fb2deabcbb0a65f2cd2407977bcb874bde388e372a"
+        "sha256:7c367615078e1170911754fb2deabcbb0a65f2cd2407977bcb874bde388e372a",
+        "sha256:de60c1ea0498b3870fee0a7dd40adf359fbd0be0d4be672a0059df1b09c0a371",
+        "sha256:1026fb50665e628913f9cb731cb97dab2bac615841d5f76b153f1c82d06948f1"
       ],
       "squash_commit_sha": null,
-      "status": "open",
+      "status": "pr_open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K2-C4-ARTIFACT-BUNDLE-CONTRACT-001.r1.task.json",
       "title": "ArtifactBundle contract seed"
     },
@@ -392,7 +401,7 @@
       "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K3",
-      "pr_number": null,
+      "pr_number": 11,
       "pr_url": null,
       "preferred_capabilities": [
         "schema",
@@ -406,10 +415,11 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:046952d96053ca8f493d11a0f576032ae61436b46c03a6a194fc3bf8cb6f4f80",
-        "sha256:71517a1d851f5f3ff0e2407d0ecda91bf1130abe7c8e1d84f5c1a56c7e4fc38c"
+        "sha256:71517a1d851f5f3ff0e2407d0ecda91bf1130abe7c8e1d84f5c1a56c7e4fc38c",
+        "sha256:bfe2b1b7b877006b4a82dada43b4efa3dca2110e71e69d4378102d498b43ac32"
       ],
       "squash_commit_sha": null,
-      "status": "open",
+      "status": "claimed",
       "task_packet": "docs/harness/broadcast/tasks/V5-K3-C5-PREVIEW-TRUTH-PATH-CONTRACT-001.r1.task.json",
       "title": "Preview truth path contract seed"
     },
