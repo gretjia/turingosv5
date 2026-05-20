@@ -246,6 +246,14 @@ PY
 fi
 
 gh pr ready "$PR_NUMBER" --repo "$REPO_NAME"
+
+PR_IS_DRAFT=$(gh pr view "$PR_NUMBER" --repo "$REPO_NAME" --json isDraft --jq .isDraft)
+if [ "$PR_IS_DRAFT" != "false" ]; then
+  echo "READY_VERIFICATION_FAILED"
+  echo "PR $PR_NUMBER is still draft after gh pr ready."
+  echo "[WORKER_HALT]"
+  exit 1
+fi
 ```
 
 Final output:

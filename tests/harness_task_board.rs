@@ -714,6 +714,29 @@ fn remote_worker_prompt_documents_pr_body_rest_fallback() {
 }
 
 #[test]
+fn remote_worker_prompt_verifies_ready_state_after_gh_pr_ready() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("gh pr ready \"$PR_NUMBER\"")
+            && prompt.contains("--json isDraft")
+            && prompt.contains("READY_VERIFICATION_FAILED"),
+        "remote prompt must verify GitHub actually cleared draft state after gh pr ready"
+    );
+    let ready = prompt
+        .find("gh pr ready \"$PR_NUMBER\"")
+        .expect("ready command must exist");
+    let verify = prompt
+        .find("--json isDraft")
+        .expect("ready verification must inspect isDraft");
+    assert!(
+        ready < verify,
+        "ready verification must happen after gh pr ready"
+    );
+}
+
+#[test]
 fn remote_worker_prompt_is_api_first_before_checkout() {
     let root = repo_root();
     let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
