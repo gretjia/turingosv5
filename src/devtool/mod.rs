@@ -1146,6 +1146,11 @@ pub fn create_worker_sandbox(task: &Value, repo: &Path, out: &Path) -> DevToolRe
         "soft_sandbox": true,
         "allowed_files": allowed_files,
         "forbidden_files": forbidden_files,
+        "acceptance_tests": task
+            .get("acceptance_tests")
+            .or_else(|| task.get("acceptance_criteria"))
+            .cloned()
+            .unwrap_or_else(|| json!(["git diff --check"])),
         "submit_contract": {
             "candidate_patch": "submit/candidate.patch",
             "worker_report": "submit/WorkerReport.json",

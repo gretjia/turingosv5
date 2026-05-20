@@ -362,6 +362,7 @@ fn worker_sandbox_submit(
     let commit_message = format!("Worker submit {atom_id}");
     git_commit(&worktree, &commit_message)?;
     let commit_sha = git_output(&worktree, &["rev-parse", "HEAD"])?;
+    let local_gates = run_local_gates(&manifest, &worktree)?;
 
     let pr = if create_pr {
         create_worker_pr(dir, &worktree, &branch, atom_id)?
@@ -389,6 +390,7 @@ fn worker_sandbox_submit(
                 "submission_commit_created": true,
                 "files_changed": changed_paths,
                 "validation": validation,
+                "local_gates": local_gates.clone(),
                 "worker_report": report,
                 "worker_halt_confirmation": "[WORKER_HALT]",
                 "pr_creation": pr.get("pr_creation").cloned().unwrap_or_else(|| serde_json::json!("created")),
@@ -406,6 +408,7 @@ fn worker_sandbox_submit(
         "worktree": worktree.display().to_string(),
         "branch": branch,
         "submission_commit_sha": commit_sha.trim(),
+        "local_gates": local_gates,
         "worker_report_record_hash": record.record_hash,
         "pr": pr,
         "runtime_truth": false
@@ -455,6 +458,47 @@ fn validation_paths(validation: &Value) -> Vec<String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+fn run_local_gates(manifest: &Value, worktree: &std::path::Path) -> Result<Value, String> {
+    let tests = manifest
+        .get("acceptance_tests")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+        })
+        .filter(|items| !items.is_empty())
+        .unwrap_or_else(|| vec!["git diff --check".to_string()]);
+    let mut results = Vec::new();
+    for cmd in tests {
+        let output = Command::new("sh")
+            .arg("-lc")
+            .arg(&cmd)
+            .current_dir(worktree)
+            .output()
+            .map_err(|err| err.to_string())?;
+        let status = if output.status.success() {
+            "pass"
+        } else {
+            "fail"
+        };
+        let result = serde_json::json!({
+            "cmd": cmd,
+            "status": status,
+            "code": output.status.code(),
+            "stdout": String::from_utf8_lossy(&output.stdout).trim(),
+            "stderr": String::from_utf8_lossy(&output.stderr).trim()
+        });
+        if !output.status.success() {
+            return Err(format!("local gate failed: {}", result["cmd"]));
+        }
+        results.push(result);
+    }
+    Ok(Value::Array(results))
 }
 
 fn git_add_paths(worktree: &std::path::Path, paths: &[String]) -> Result<(), String> {
