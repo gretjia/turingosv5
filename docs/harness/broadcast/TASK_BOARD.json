@@ -88,7 +88,14 @@
     "sha256:c4857a87af800bdb79cb6d870bca5f6382aaf3887bc48df31c6a227f97989ffd",
     "sha256:ea7232a65968bdf5d62b310726f03368699311558c9a1f8dd4777652194cc685",
     "sha256:0911a37d7f2ce606e06374f43545fd753e85d3ef7e5942c5665c7ca9fd518e10",
-    "sha256:db2b7f8c7c17dd2818fd07f88c0ace1e17855467b31a67564327814cf26438b0"
+    "sha256:db2b7f8c7c17dd2818fd07f88c0ace1e17855467b31a67564327814cf26438b0",
+    "sha256:521824307813d4099e5e41a2ddc6bca54e1923780cec5b8815beef7db23c247e",
+    "sha256:60733529989fdab0eb0ff200d90ac2cf83cecf201a4cfd7a829d29185edb5247",
+    "sha256:5603e835ae3323883cd878158789becc228bf4e817c628aae9428cebbea30378",
+    "sha256:868102e36d2b427f5bf4a2213f684562b05feb204ab4f462dd9e3c19977b6119",
+    "sha256:bb92190107efd1bb7dc9ad335c868362d81f2b6b1f619628cbcd41c77ea2e34b",
+    "sha256:cd4a4da822b89eaca3b774ca126240704b380d903256454fa99adb59f5c0baac",
+    "sha256:0a26d0769fb624e7c480277cd1c197733c7d023a7a5668cfba2f141338e37232"
   ],
   "tasks": [
     {
@@ -540,15 +547,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
-      "main_after": null,
-      "merge_commit_sha": null,
+      "main_after": "7e12f5f7559ce7c5014b73cb4cd2196e04680c41",
+      "merge_commit_sha": "7e12f5f7559ce7c5014b73cb4cd2196e04680c41",
       "merge_decision": null,
       "merge_decision_cid": null,
-      "merge_method": null,
+      "merge_method": "squash",
       "meta_opened": true,
       "phase": "V5-K4",
-      "pr_number": null,
-      "pr_url": null,
+      "pr_number": 40,
+      "pr_url": "https://github.com/gretjia/turingosv5/pull/40",
       "preferred_capabilities": [
         "tests"
       ],
@@ -560,10 +567,11 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:1c55f437db05efec3bc9e3ec11a049e34cd0b90a5fbed0436eba681e7c422d83",
-        "sha256:9d4f7964b2580c9adf1c255b4357e7e88083b499bb2579a480ed86cf2ae959e8"
+        "sha256:9d4f7964b2580c9adf1c255b4357e7e88083b499bb2579a480ed86cf2ae959e8",
+        "sha256:0a26d0769fb624e7c480277cd1c197733c7d023a7a5668cfba2f141338e37232"
       ],
-      "squash_commit_sha": null,
-      "status": "open",
+      "squash_commit_sha": "7e12f5f7559ce7c5014b73cb4cd2196e04680c41",
+      "status": "merged",
       "task_packet": "docs/harness/broadcast/tasks/V5-K4-C7-FRIENDLY-ERROR-L4E-CONTRACT-001.r1.task.json",
       "title": "Friendly error and L4.E contract"
     },
