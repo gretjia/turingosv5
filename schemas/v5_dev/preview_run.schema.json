@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.dev/schemas/v5_dev/preview_run.schema.json",
+  "title": "PreviewRunCapsule",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "preview_run_cid",
+    "artifact_bundle_cid",
+    "redaction_result_cid",
+    "renderer",
+    "rendered_at"
+  ],
+  "properties": {
+    "kind": {
+      "const": "PreviewRunCapsule",
+      "description": "Discriminator for the read-only preview render capsule."
+    },
+    "preview_run_cid": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "CID of this preview run evidence capsule."
+    },
+    "artifact_bundle_cid": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "CID of the ArtifactBundle rendered by this preview."
+    },
+    "redaction_result_cid": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "CID of the redaction result applied before rendering."
+    },
+    "renderer": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Renderer label used for provenance only."
+    },
+    "rendered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Observed render timestamp."
+    }
+  }
+}
