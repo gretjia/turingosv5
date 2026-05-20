@@ -1070,13 +1070,15 @@ pub fn meta_reconcile_report(board: &Value, prs: &Value) -> DevToolResult<Value>
         for (index, pr) in atom_prs.iter().enumerate() {
             let status = task_status.get(&atom).map(String::as_str);
             let needs_report = !has_worker_report(pr);
-            let action = if index > 0 {
-                "supersede_duplicate_claim"
-            } else if matches!(
+            let action = if matches!(
                 status,
                 Some("merged") | Some("superseded") | Some("retired")
             ) {
                 "supersede_closed_task_claim"
+            } else if pr_string(pr, "state") == "MERGED" {
+                "record_pr_merged"
+            } else if index > 0 {
+                "supersede_duplicate_claim"
             } else if pr_string(pr, "mergeStateStatus").eq_ignore_ascii_case("DIRTY") {
                 "hold_dirty_claim"
             } else if status == Some("pr_open") && !needs_report && has_failed_check(pr) {
@@ -1333,6 +1335,13 @@ fn pr_action(pr: &Value, atom_id: Value, action: &str, needs_worker_report: bool
         "needs_worker_report": needs_worker_report,
         "is_draft": pr.get("isDraft").cloned().unwrap_or(Value::Null),
         "created_at": pr.get("createdAt").cloned().unwrap_or(Value::Null),
+        "state": pr.get("state").cloned().unwrap_or(Value::Null),
+        "merged_at": pr.get("mergedAt").cloned().unwrap_or(Value::Null),
+        "merge_commit_sha": pr
+            .get("mergeCommit")
+            .and_then(|commit| commit.get("oid"))
+            .cloned()
+            .unwrap_or(Value::Null),
         "merge_state_status": pr.get("mergeStateStatus").cloned().unwrap_or(Value::Null)
     })
 }
