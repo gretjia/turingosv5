@@ -1,465 +1,724 @@
 {
   "board_version": "v0.7",
-  "generated_at": "2026-05-19T00:00:00Z",
-  "generated_by_role": "meta",
-  "source": "TuringOS V5 DevTape v1.0 final preflight",
   "board_writer": "meta-only",
+  "conflict_policy": "supersede_on_dirty",
+  "default_duplicate_policy": "first_valid_pr_wins",
   "default_worker_profile": {
     "allowed_class": 1,
     "capabilities": [
-      "architecture",
-      "audit",
-      "boundary",
-      "characterization",
-      "cli",
-      "contracts",
-      "devtape",
-      "devtool",
       "docs",
-      "evidence",
-      "github",
-      "harness",
-      "json",
-      "merge-gate",
-      "meta-governance",
-      "policy",
-      "projection",
-      "qa",
-      "reuse",
-      "rust",
-      "schema",
-      "tests",
-      "veto",
-      "worker-lifecycle"
+      "harness"
     ]
   },
+  "generated_at": "1970-01-01T00:00:00Z",
+  "generated_by_role": "meta",
+  "max_repair_attempts": 3,
   "runtime_boundary": {
     "development_control_plane_only": true,
-    "v5_runtime_must_not_read": [
-      "AGENT_ENTRY.md",
-      "docs/harness/broadcast/**",
-      "handover/evidence/**",
-      ".turingos_system/**"
-    ]
+    "runtime_truth": false
   },
-  "default_duplicate_policy": "first_valid_pr_wins",
-  "max_repair_attempts": 3,
-  "worker_halt_required": true,
-  "conflict_policy": "supersede_on_dirty",
+  "source": "devtape_derived",
+  "source_event_cids": [
+    "sha256:661e1908c7a4279549add8674ce08637d4fbd9d9194e9bd856e21c7ee5d0fac1",
+    "sha256:9496c571fe666b4bbd42505d90de3fa89a354cabffbc89ebd4e2bada376921fa",
+    "sha256:c7e3889620a60a681060cf3da1c7ca52ed41c979775f90c401bbc485dde3fec3",
+    "sha256:d467e867342ab0b6f4bc45326bc8eacd48645ecede43b6d6c3a8534ad4b45650",
+    "sha256:fe7eb24c09bf1796390619813b71627d6afce664251639adebd6a2ba4fb23b80",
+    "sha256:2d4a87a5c11ba062a5b225b344ecf75d7e7daf4472bbd82b5239cd7c4d1cd687",
+    "sha256:7f551189bf16def926a3c97d39d1b1d9cc7b921aa87c9fd055260fc3e103372e",
+    "sha256:ca720f315276bb5285ec41414bde510380c39b85b537b8325a93315077241b04",
+    "sha256:085364a1a297d9d8e3191523e389b792f84a8e30efbd6c0667e10a30e7677074",
+    "sha256:fe36484daf8d1d1498c8c9ea72bb0f3ffd00d1a924b31706586aa34ec4f9b261",
+    "sha256:b1cc1397f1949a399b450c38ca2f924342c80a9babe56b6f60103a8d55c16a65",
+    "sha256:52d57edce0bede0b4cfe92903eef9a333b0c2f9ad22385996db0a3ac9363622f",
+    "sha256:7351b97ddda9aabe0bac39b608fa37bf16a68c2a298e9a69c25f9da6b10b90a4",
+    "sha256:eac33126bc4acde17e95c1a643296024a1fca25e59d435d0a95df178fd323f1e",
+    "sha256:05d8da3611962e126f3370107b066687046826326c660d0e8d1f4347a98f225c",
+    "sha256:7c367615078e1170911754fb2deabcbb0a65f2cd2407977bcb874bde388e372a",
+    "sha256:046952d96053ca8f493d11a0f576032ae61436b46c03a6a194fc3bf8cb6f4f80",
+    "sha256:71517a1d851f5f3ff0e2407d0ecda91bf1130abe7c8e1d84f5c1a56c7e4fc38c",
+    "sha256:83944cecf6eefd0804a2c05ad08f3df734c8e29b5b3e245fb68461ec29a4b1b2",
+    "sha256:f622d4764d9120050c9e87c95ce8d510be9a903cecae7a55317675f47c489cb3",
+    "sha256:1c55f437db05efec3bc9e3ec11a049e34cd0b90a5fbed0436eba681e7c422d83",
+    "sha256:9d4f7964b2580c9adf1c255b4357e7e88083b499bb2579a480ed86cf2ae959e8",
+    "sha256:005b4155c6ae3133bccdc4c29471816946b39313a3a8291183ac9f3943a43d34",
+    "sha256:03a91f75a177387806c6e4e6ae4fe6aee1b24c27ac75a458da112d16c998e3d8",
+    "sha256:ccb8cb9e4680ef2446f196a3301be8c7cec1f5430d2faeef535398560e2550be",
+    "sha256:6aa821ed52c857da68e622dbb3d0e1544ac4dc8497126f663e45ed4bd2adcc8a",
+    "sha256:673bb3f6272b4fb8d33f43f0fa50f9ead9ef84229a8c53736917fac1af2bc73b",
+    "sha256:da5073ee4f9156a7458b64c89f40a422db6872549d339e3139ed112ddfd5f922",
+    "sha256:45305e4830ccff10ccd1a5ce233c67c85225c1facbbc8ba24338160d7b85b924",
+    "sha256:78da95f604c5cbf5bcd7b2fd158d732c4eff7c76e4ee8f63fa0fdfab9d1bfd72",
+    "sha256:18ed9c463d6a73ea300bff09dc53a00b92823756c964742c762176aca46dd1ae",
+    "sha256:138d6aaa7d422a8688e75a96e7ce8fb5d579dc93b5708b885b5d90d091b3c90c",
+    "sha256:79c72847132f18637c5f9b18348badbf3ea653ae2a55b93548bd5bbd20f9ef5f"
+  ],
   "tasks": [
     {
-      "atom_id": "V5-R0-DOCS-001",
+      "acceptance_tests": [
+        "test -f docs/roadmap/C0_REALITY_MAP_GAP_NOTES.md",
+        "rg \"code anchor|test anchor|assumption\" docs/roadmap/TURINGOS_REALITY_MAP_K0.md docs/roadmap/C0_REALITY_MAP_GAP_NOTES.md",
+        "cargo test --test v5_plan_reality_map",
+        "git diff --check"
+      ],
+      "allowed_files": [
+        "docs/roadmap/TURINGOS_REALITY_MAP_K0.md",
+        "docs/roadmap/C0_REALITY_MAP_GAP_NOTES.md"
+      ],
+      "atom_id": "V5-K0-C0-REALITY-MAP-HARD-GATE-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "RealityProof",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K0",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "audit",
+        "harness"
+      ],
+      "priority": "P0",
+      "required_capabilities": [
+        "docs"
+      ],
       "revision": 1,
-      "title": "Add V5 CHARTER.md",
-      "status": "retired",
-      "phase": "V5-R0",
-      "lane": "Docs",
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:7f551189bf16def926a3c97d39d1b1d9cc7b921aa87c9fd055260fc3e103372e",
+        "sha256:ca720f315276bb5285ec41414bde510380c39b85b537b8325a93315077241b04"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K0-C0-REALITY-MAP-HARD-GATE-001.r1.task.json",
+      "title": "Reality Map hard gate from final task book"
+    },
+    {
+      "acceptance_tests": [
+        "test -f docs/architecture/C1_CHRONOLOGY_CHECKLIST.md",
+        "rg \"Path B-pragmatic|future research|legacy\" docs/adr/0001-substrate-path-b-pragmatic-git2.md docs/architecture/legacy_anchor_reconciliation.md docs/architecture/C1_CHRONOLOGY_CHECKLIST.md",
+        "cargo test --test v5_plan_reality_map",
+        "git diff --check"
+      ],
+      "allowed_files": [
+        "docs/adr/0001-substrate-path-b-pragmatic-git2.md",
+        "docs/architecture/legacy_anchor_reconciliation.md",
+        "docs/architecture/C1_CHRONOLOGY_CHECKLIST.md"
+      ],
+      "atom_id": "V5-K0-C1-PATH-DECISION-CHRONOLOGY-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ArchitectureDocs",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K0",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "harness"
+      ],
+      "priority": "P0",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:085364a1a297d9d8e3191523e389b792f84a8e30efbd6c0667e10a30e7677074",
+        "sha256:fe36484daf8d1d1498c8c9ea72bb0f3ffd00d1a924b31706586aa34ec4f9b261"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K0-C1-PATH-DECISION-CHRONOLOGY-001.r1.task.json",
+      "title": "Path decision and chronology seal"
+    },
+    {
+      "acceptance_tests": [
+        "cargo test --test v5_no_new_substrate_policy",
+        "rg \"src/cas.rs|src/hash.rs|versioned_state|parallel substrate\" docs/roadmap/C2_NO_NEW_SUBSTRATE_CHECKLIST.md",
+        "cargo test --workspace",
+        "git diff --check"
+      ],
+      "allowed_files": [
+        "docs/roadmap/C2_NO_NEW_SUBSTRATE_CHECKLIST.md",
+        "tests/v5_no_new_substrate_policy.rs"
+      ],
+      "atom_id": "V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "PolicyTests",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K1",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "tests"
+      ],
+      "priority": "P1",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:b1cc1397f1949a399b450c38ca2f924342c80a9babe56b6f60103a8d55c16a65",
+        "sha256:52d57edce0bede0b4cfe92903eef9a333b0c2f9ad22385996db0a3ac9363622f"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001.r1.task.json",
+      "title": "No-new-substrate regression checklist"
+    },
+    {
+      "acceptance_tests": [
+        "cargo test --test v5_llm_call_evidence_inventory",
+        "rg \"PromptCapsule|AttemptTelemetry|EvidenceTuple|naked\" docs/roadmap/C3_LLM_CALL_EVIDENCE_INVENTORY.md",
+        "cargo test --workspace",
+        "git diff --check"
+      ],
+      "allowed_files": [
+        "docs/roadmap/C3_LLM_CALL_EVIDENCE_INVENTORY.md",
+        "tests/v5_llm_call_evidence_inventory.rs"
+      ],
+      "atom_id": "V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "EvidenceDocs",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K1",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "tests"
+      ],
+      "priority": "P1",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:7351b97ddda9aabe0bac39b608fa37bf16a68c2a298e9a69c25f9da6b10b90a4",
+        "sha256:eac33126bc4acde17e95c1a643296024a1fca25e59d435d0a95df178fd323f1e"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001.r1.task.json",
+      "title": "LLM call evidence inventory contract"
+    },
+    {
+      "acceptance_tests": [
+        "jq . schemas/v5_dev/artifact_bundle.schema.json",
+        "cargo test --test v5_artifact_bundle_contract",
+        "rg \"artifact_bundle_cid|spec_capsule_cid|files\" docs/contracts/artifact_bundle.md",
+        "cargo test --workspace"
+      ],
+      "allowed_files": [
+        "docs/contracts/artifact_bundle.md",
+        "schemas/v5_dev/artifact_bundle.schema.json",
+        "tests/v5_artifact_bundle_contract.rs"
+      ],
+      "atom_id": "V5-K2-C4-ARTIFACT-BUNDLE-CONTRACT-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ProductContract",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K2",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "schema",
+        "tests"
+      ],
+      "priority": "P1",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:05d8da3611962e126f3370107b066687046826326c660d0e8d1f4347a98f225c",
+        "sha256:7c367615078e1170911754fb2deabcbb0a65f2cd2407977bcb874bde388e372a"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K2-C4-ARTIFACT-BUNDLE-CONTRACT-001.r1.task.json",
+      "title": "ArtifactBundle contract seed"
+    },
+    {
+      "acceptance_tests": [
+        "jq . schemas/v5_dev/preview_run.schema.json",
+        "cargo test --test v5_preview_run_contract",
+        "rg \"artifact_bundle_cid|read-only|redaction\" docs/contracts/preview_run.md",
+        "cargo test --workspace"
+      ],
+      "allowed_files": [
+        "docs/contracts/preview_run.md",
+        "schemas/v5_dev/preview_run.schema.json",
+        "tests/v5_preview_run_contract.rs"
+      ],
+      "atom_id": "V5-K3-C5-PREVIEW-TRUTH-PATH-CONTRACT-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ProductContract",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K3",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "schema",
+        "tests"
+      ],
+      "priority": "P1",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:046952d96053ca8f493d11a0f576032ae61436b46c03a6a194fc3bf8cb6f4f80",
+        "sha256:71517a1d851f5f3ff0e2407d0ecda91bf1130abe7c8e1d84f5c1a56c7e4fc38c"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K3-C5-PREVIEW-TRUTH-PATH-CONTRACT-001.r1.task.json",
+      "title": "Preview truth path contract seed"
+    },
+    {
+      "acceptance_tests": [
+        "cargo test --test v5_build_session_view_contract",
+        "rg \"derived view|delete cache|rebuild\" docs/contracts/build_session_view.md",
+        "cargo test --workspace",
+        "git diff --check"
+      ],
+      "allowed_files": [
+        "docs/contracts/build_session_view.md",
+        "tests/v5_build_session_view_contract.rs"
+      ],
+      "atom_id": "V5-K4-C6-BUILD-SESSION-DERIVED-VIEW-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ProductContract",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K4",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "tests"
+      ],
+      "priority": "P1",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:83944cecf6eefd0804a2c05ad08f3df734c8e29b5b3e245fb68461ec29a4b1b2",
+        "sha256:f622d4764d9120050c9e87c95ce8d510be9a903cecae7a55317675f47c489cb3"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K4-C6-BUILD-SESSION-DERIVED-VIEW-001.r1.task.json",
+      "title": "BuildSession derived view contract"
+    },
+    {
+      "acceptance_tests": [
+        "cargo test --test v5_friendly_error_l4e_contract",
+        "rg \"RejectClass|L4.E|friendly error\" docs/contracts/friendly_error_l4e.md",
+        "cargo test --workspace"
+      ],
+      "allowed_files": [
+        "docs/contracts/friendly_error_l4e.md",
+        "tests/v5_friendly_error_l4e_contract.rs"
+      ],
+      "atom_id": "V5-K4-C7-FRIENDLY-ERROR-L4E-CONTRACT-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ProductContract",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K4",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "tests"
+      ],
+      "priority": "P1",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:1c55f437db05efec3bc9e3ec11a049e34cd0b90a5fbed0436eba681e7c422d83",
+        "sha256:9d4f7964b2580c9adf1c255b4357e7e88083b499bb2579a480ed86cf2ae959e8"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K4-C7-FRIENDLY-ERROR-L4E-CONTRACT-001.r1.task.json",
+      "title": "Friendly error and L4.E contract"
+    },
+    {
+      "acceptance_tests": [
+        "cargo test --test v5_single_url_mvp_contract",
+        "rg \"/build|spec -> generate -> preview|BuildSessionView\" docs/contracts/single_url_mvp.md",
+        "cargo test --workspace"
+      ],
+      "allowed_files": [
+        "docs/contracts/single_url_mvp.md",
+        "tests/v5_single_url_mvp_contract.rs"
+      ],
+      "atom_id": "V5-K4-C8-SINGLE-URL-MVP-CONTRACT-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ProductContract",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K4",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "tests"
+      ],
+      "priority": "P2",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:005b4155c6ae3133bccdc4c29471816946b39313a3a8291183ac9f3943a43d34",
+        "sha256:03a91f75a177387806c6e4e6ae4fe6aee1b24c27ac75a458da112d16c998e3d8"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K4-C8-SINGLE-URL-MVP-CONTRACT-001.r1.task.json",
+      "title": "Single URL MVP contract"
+    },
+    {
+      "acceptance_tests": [
+        "cargo test --test v5_edit_regenerate_contract",
+        "rg \"ModificationRequestCapsule|new ArtifactBundle|old artifact\" docs/contracts/edit_regenerate_versioning.md",
+        "cargo test --workspace"
+      ],
+      "allowed_files": [
+        "docs/contracts/edit_regenerate_versioning.md",
+        "tests/v5_edit_regenerate_contract.rs"
+      ],
+      "atom_id": "V5-K5-C9-EDIT-REGENERATE-VERSIONING-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ProductContract",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K5",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "tests"
+      ],
+      "priority": "P2",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:ccb8cb9e4680ef2446f196a3301be8c7cec1f5430d2faeef535398560e2550be",
+        "sha256:6aa821ed52c857da68e622dbb3d0e1544ac4dc8497126f663e45ed4bd2adcc8a"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K5-C9-EDIT-REGENERATE-VERSIONING-001.r1.task.json",
+      "title": "Edit/regenerate versioning contract"
+    },
+    {
+      "acceptance_tests": [
+        "jq . schemas/v5_dev/test_run_capsule.schema.json",
+        "cargo test --test v5_spec_derived_testrun_contract",
+        "rg \"AcceptanceSlot|TestScenarioSetCapsule|TestRunCapsule|hidden oracle\" docs/contracts/spec_derived_testrun.md",
+        "cargo test --workspace"
+      ],
+      "allowed_files": [
+        "docs/contracts/spec_derived_testrun.md",
+        "schemas/v5_dev/test_run_capsule.schema.json",
+        "tests/v5_spec_derived_testrun_contract.rs"
+      ],
+      "atom_id": "V5-K6-C10-SPEC-DERIVED-TESTRUN-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ProductContract",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K6",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "schema",
+        "tests"
+      ],
+      "priority": "P2",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:673bb3f6272b4fb8d33f43f0fa50f9ead9ef84229a8c53736917fac1af2bc73b",
+        "sha256:da5073ee4f9156a7458b64c89f40a422db6872549d339e3139ed112ddfd5f922"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K6-C10-SPEC-DERIVED-TESTRUN-001.r1.task.json",
+      "title": "Spec-derived TestRun contract"
+    },
+    {
+      "acceptance_tests": [
+        "cargo test --test v5_audit_packet_contract",
+        "rg \"commit SHA|Reality Map|test outputs|evidence coverage|ChainTape verify\" docs/contracts/audit_packet.md",
+        "cargo test --workspace"
+      ],
+      "allowed_files": [
+        "docs/contracts/audit_packet.md",
+        "tests/v5_audit_packet_contract.rs"
+      ],
+      "atom_id": "V5-K7-C11-AUDIT-PACKET-CONTRACT-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
+      "class": 1,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "AuditContract",
+      "merge_decision": null,
+      "meta_opened": true,
+      "phase": "V5-K7",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "tests"
+      ],
+      "priority": "P2",
+      "required_capabilities": [
+        "docs"
+      ],
+      "revision": 1,
+      "self_select": true,
+      "source_event_cids": [
+        "sha256:45305e4830ccff10ccd1a5ce233c67c85225c1facbbc8ba24338160d7b85b924",
+        "sha256:78da95f604c5cbf5bcd7b2fd158d732c4eff7c76e4ee8f63fa0fdfab9d1bfd72"
+      ],
+      "status": "open",
+      "task_packet": "docs/harness/broadcast/tasks/V5-K7-C11-AUDIT-PACKET-CONTRACT-001.r1.task.json",
+      "title": "Audit packet contract"
+    },
+    {
+      "acceptance_tests": [
+        "test -f docs/roadmap/MULTI_AGENT_DUPLICATE_CLAIM_CANARY.md",
+        "rg \"WorkerReport|\\[WORKER_HALT\\]|earliest_valid_claim_wins\" docs/roadmap/MULTI_AGENT_DUPLICATE_CLAIM_CANARY.md",
+        "git diff --check"
+      ],
+      "allowed_files": [
+        "docs/roadmap/MULTI_AGENT_DUPLICATE_CLAIM_CANARY.md"
+      ],
+      "atom_id": "V5-STRESS-DUPLICATE-CLAIM-001",
+      "blockers": [],
+      "claim_method": "draft_pr",
+      "claim_mode": "open_pool",
+      "claim_required": true,
       "class": 0,
-      "priority": "P0",
-      "self_select": false,
+      "duplicate_policy": "earliest_valid_claim_wins",
+      "forbidden_files": [
+        "constitution.md",
+        "genesis_payload.toml",
+        "docs/harness/broadcast/TASK_BOARD.json",
+        "src/runtime/**",
+        "src/state/**",
+        "src/cas.rs",
+        "src/hash.rs",
+        "src/versioned_state.rs",
+        ".turingos_system/**"
+      ],
+      "lane": "ClaimCoordination",
+      "merge_decision": null,
       "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": false,
-      "claim_method": "none",
-      "required_capabilities": ["docs"],
-      "preferred_capabilities": [],
-      "allowed_files": ["CHARTER.md"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-R0-DOCS-001.r1.task.json",
-      "acceptance_tests": ["git diff --check"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["Retired by DevTape v1.0 final preflight"]
-    },
-    {
-      "atom_id": "V5-R0-HARNESS-001",
-      "revision": 1,
-      "title": "Add AGENT_ENTRY.md",
-      "status": "retired",
-      "phase": "V5-R0",
-      "lane": "Harness",
-      "class": 1,
+      "phase": "V5-STRESS",
+      "pr_number": null,
+      "preferred_capabilities": [
+        "harness"
+      ],
       "priority": "P0",
-      "self_select": false,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": false,
-      "claim_method": "none",
-      "required_capabilities": ["docs", "harness"],
-      "preferred_capabilities": [],
-      "allowed_files": ["AGENT_ENTRY.md"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-R0-HARNESS-001.r1.task.json",
-      "acceptance_tests": ["git diff --check", "cargo test --test harness_task_board"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["Retired by DevTape v1.0 final preflight"]
-    },
-    {
-      "atom_id": "V5-R0-QA-001",
+      "required_capabilities": [
+        "docs"
+      ],
       "revision": 1,
-      "title": "Add no-new-substrate regression skeleton",
-      "status": "retired",
-      "phase": "V5-R0",
-      "lane": "QA",
-      "class": 3,
-      "priority": "P0",
-      "self_select": false,
-      "meta_opened": false,
-      "claim_mode": "direct_assignment",
-      "claim_required": false,
-      "claim_method": "none",
-      "required_capabilities": ["qa", "tests"],
-      "preferred_capabilities": [],
-      "allowed_files": ["tests/constitution_no_new_parallel_substrate.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-R0-QA-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test constitution_no_new_parallel_substrate"],
-      "duplicate_policy": "no_duplicates",
-      "blockers": ["Retired by DevTape v1.0 final preflight"]
-    },
-    {
-      "atom_id": "V5-H0-HARNESS-JSON-001",
-      "revision": 1,
-      "title": "Harden TASK_BOARD JSON and schema smoke",
-      "status": "retired",
-      "phase": "V5-H0",
-      "lane": "Harness",
-      "class": 1,
-      "priority": "P0",
-      "self_select": false,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": false,
-      "claim_method": "none",
-      "required_capabilities": ["harness", "json", "schema", "qa"],
-      "preferred_capabilities": [],
-      "allowed_files": ["docs/harness/schemas/task_board.schema.json", "tests/harness_task_board.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-JSON-001.r1.task.json",
-      "acceptance_tests": ["jq . docs/harness/broadcast/TASK_BOARD.json", "cargo test --test harness_task_board"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["Retired by DevTape v1.0 final preflight"]
-    },
-    {
-      "atom_id": "V5-H0-HARNESS-SINGLESHOT-001",
-      "revision": 1,
-      "title": "Enforce single-shot worker halt lifecycle",
-      "status": "retired",
-      "phase": "V5-H0",
-      "lane": "Harness",
-      "class": 1,
-      "priority": "P0",
-      "self_select": false,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": false,
-      "claim_method": "none",
-      "required_capabilities": ["harness", "docs", "worker-lifecycle"],
-      "preferred_capabilities": [],
-      "allowed_files": ["AGENT_ENTRY.md", "docs/harness/WORKER_HARNESS.md", "docs/harness/templates/WorkerReport.md", "docs/harness/schemas/worker_report.schema.json", "tests/harness_task_board.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-SINGLESHOT-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test harness_task_board"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["Retired by DevTape v1.0 final preflight"]
-    },
-    {
-      "atom_id": "V5-H0-HARNESS-REPAIR-001",
-      "revision": 1,
-      "title": "Document repair fuse and dirty conflict quarantine",
-      "status": "retired",
-      "phase": "V5-H0",
-      "lane": "Harness",
-      "class": 1,
-      "priority": "P0",
-      "self_select": false,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": false,
-      "claim_method": "none",
-      "required_capabilities": ["harness", "meta-governance", "policy"],
-      "preferred_capabilities": [],
-      "allowed_files": ["docs/harness/TASK_BROADCAST_POLICY.md", "docs/harness/FAILURE_PLAYBOOK.md", "docs/harness/DIRTY_TREE_POLICY.md", "docs/harness/META_HARNESS.md", "docs/harness/templates/MergeDecision.md", "tests/harness_task_board.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-H0-HARNESS-REPAIR-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test harness_task_board"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["Retired by DevTape v1.0 final preflight"]
-    },
-    {
-      "atom_id": "V5-SYS-A0-ARCH-PIN-001",
-      "revision": 1,
-      "title": "Pin DevTape v1.0 core architecture",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Architecture",
-      "class": 0,
-      "priority": "P0",
-      "self_select": false,
-      "meta_opened": true,
-      "claim_mode": "direct_assignment",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["architecture", "docs", "meta-governance"],
-      "preferred_capabilities": ["devtape", "policy"],
-      "allowed_files": ["docs/v5_dev/CORE_DEV_FLOW.md", "docs/v5_dev/DEVTAPE_V1_EXECUTION_PLAN.md", "tests/v5_devtape_v1_execution_plan.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A0-ARCH-PIN-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test v5_devtape_v1_execution_plan", "cargo test --workspace"],
-      "duplicate_policy": "no_duplicates",
-      "blockers": []
-    },
-    {
-      "atom_id": "V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001",
-      "revision": 1,
-      "title": "Close baseline and align TuringOS System semantics",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Baseline",
-      "class": 1,
-      "priority": "P0",
       "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["docs", "harness", "policy"],
-      "preferred_capabilities": ["qa"],
-      "allowed_files": ["AGENTS.md", "AGENT_ENTRY.md", "docs/v5_dev/**", "docs/harness/README.md", "docs/harness/META_HARNESS.md", "docs/harness/WORKER_HARNESS.md", "tests/v5_*.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001.r1.task.json",
-      "acceptance_tests": ["cargo test --workspace", "git diff --check"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": []
-    },
-    {
-      "atom_id": "V5-SYS-A2-WORKBENCH-BOUNDARY-001",
-      "revision": 1,
-      "title": "Define TuringOS system workbench boundary",
+      "source_event_cids": [
+        "sha256:18ed9c463d6a73ea300bff09dc53a00b92823756c964742c762176aca46dd1ae",
+        "sha256:138d6aaa7d422a8688e75a96e7ce8fb5d579dc93b5708b885b5d90d091b3c90c"
+      ],
       "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Boundary",
-      "class": 1,
-      "priority": "P0",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["docs", "policy", "qa"],
-      "preferred_capabilities": ["boundary"],
-      "allowed_files": [".gitignore", "docs/lineage/TURINGOS_SYSTEM_SNAPSHOT.md", "docs/v5_dev/TURINGOS_SYSTEM_WORKBENCH.md", "tests/v5_system_workbench_boundary.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**", "src/state/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A2-WORKBENCH-BOUNDARY-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test v5_system_workbench_boundary", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A3-CHARACTERIZATION-SEEDS-001",
-      "revision": 1,
-      "title": "Create characterization seed fixtures",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Characterization",
-      "class": 1,
-      "priority": "P0",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["docs", "qa", "json"],
-      "preferred_capabilities": ["characterization"],
-      "allowed_files": ["fixtures/turingos_system/**", "docs/v5_dev/CHARACTERIZATION_STRATEGY.md", "tests/v5_characterization_contract.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", ".turingos_system/**", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A3-CHARACTERIZATION-SEEDS-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test v5_characterization_contract", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A4-MICRO-DEVTAPE-001",
-      "revision": 1,
-      "title": "Implement Micro DevTape proof",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "DevTool",
-      "class": 1,
-      "priority": "P0",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["rust", "devtool", "tests"],
-      "preferred_capabilities": ["devtape"],
-      "allowed_files": ["src/devtool/**", "src/lib.rs", "tests/v5_micro_dev_tape.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**", "src/cas.rs", "src/hash.rs"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A4-MICRO-DEVTAPE-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test v5_micro_dev_tape", "cargo check --workspace", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A3-CHARACTERIZATION-SEEDS-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A5-DERIVED-BOARD-PROJECTOR-001",
-      "revision": 1,
-      "title": "Implement derived board projector",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "DevTool",
-      "class": 1,
-      "priority": "P0",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["rust", "devtool", "tests", "projection"],
-      "preferred_capabilities": ["board"],
-      "allowed_files": ["src/devtool/**", "tests/v5_board_projector.rs", "docs/v5_dev/DERIVED_TASK_BOARD_CONTRACT.md"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A5-DERIVED-BOARD-PROJECTOR-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test v5_board_projector", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A4-MICRO-DEVTAPE-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A6-CLI-INTAKE-WRAPPER-001",
-      "revision": 1,
-      "title": "Add turingos-dev CLI intake wrapper",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "CLI",
-      "class": 1,
-      "priority": "P0",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["rust", "cli", "devtool", "tests"],
-      "preferred_capabilities": ["json"],
-      "allowed_files": ["Cargo.toml", "src/bin/turingos-dev.rs", "src/devtool/**", "tests/v5_cli_intake.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A6-CLI-INTAKE-WRAPPER-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test v5_cli_intake", "cargo check --workspace", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A5-DERIVED-BOARD-PROJECTOR-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A7-REUSE-PORT-CONTRACT-001",
-      "revision": 1,
-      "title": "Define minimal reuse port contract",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Contracts",
-      "class": 1,
-      "priority": "P1",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["docs", "schema", "qa", "reuse"],
-      "preferred_capabilities": ["contracts"],
-      "allowed_files": ["docs/contracts/turingos_system_ports.md", "schemas/v5_dev/system_capability.schema.json", "tests/v5_system_ports_contract.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A7-REUSE-PORT-CONTRACT-001.r1.task.json",
-      "acceptance_tests": ["jq . schemas/v5_dev/system_capability.schema.json", "cargo test --test v5_system_ports_contract", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A6-CLI-INTAKE-WRAPPER-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A8-GITHUB-EVIDENCE-SNAPSHOT-001",
-      "revision": 1,
-      "title": "Define GitHub evidence snapshot payload",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Evidence",
-      "class": 1,
-      "priority": "P1",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["docs", "schema", "github", "qa"],
-      "preferred_capabilities": ["evidence"],
-      "allowed_files": ["docs/contracts/github_backup_snapshot.md", "schemas/v5_dev/github_backup_snapshot.schema.json", "tests/v5_github_backup_contract.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A8-GITHUB-EVIDENCE-SNAPSHOT-001.r1.task.json",
-      "acceptance_tests": ["jq . schemas/v5_dev/github_backup_snapshot.schema.json", "cargo test --test v5_github_backup_contract", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A6-CLI-INTAKE-WRAPPER-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A9-ACTIVE-MERGE-GATE-001",
-      "revision": 1,
-      "title": "Implement active merge gate check",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Gate",
-      "class": 1,
-      "priority": "P1",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["rust", "devtool", "tests", "merge-gate"],
-      "preferred_capabilities": ["policy"],
-      "allowed_files": ["src/devtool/**", "tests/v5_active_gate.rs", "docs/v5_dev/ACTIVE_MERGE_GATE_CONTRACT.md"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/runtime/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A9-ACTIVE-MERGE-GATE-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test v5_active_gate", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A7-REUSE-PORT-CONTRACT-001", "V5-SYS-A8-GITHUB-EVIDENCE-SNAPSHOT-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A10-HARNESS-THINNING-001",
-      "revision": 1,
-      "title": "Thin harness into CLI intake layer",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Harness",
-      "class": 1,
-      "priority": "P1",
-      "self_select": true,
-      "meta_opened": true,
-      "claim_mode": "open_pool",
-      "claim_required": true,
-      "claim_method": "draft_pr",
-      "required_capabilities": ["docs", "harness", "policy"],
-      "preferred_capabilities": ["worker-lifecycle"],
-      "allowed_files": ["AGENT_ENTRY.md", "docs/harness/**", "tests/harness_task_board.rs", "tests/v5_harness_alignment.rs"],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A10-HARNESS-THINNING-001.r1.task.json",
-      "acceptance_tests": ["cargo test --test harness_task_board", "cargo test --test v5_harness_alignment", "cargo test --workspace"],
-      "duplicate_policy": "first_valid_pr_wins",
-      "blockers": ["V5-SYS-A9-ACTIVE-MERGE-GATE-001"]
-    },
-    {
-      "atom_id": "V5-SYS-A11-AUDIT-VETO-001",
-      "revision": 1,
-      "title": "Run final read-only audit and veto",
-      "status": "open",
-      "phase": "V5-SYS",
-      "lane": "Audit",
-      "class": 1,
-      "priority": "P0",
-      "self_select": false,
-      "meta_opened": true,
-      "claim_mode": "direct_assignment",
-      "claim_required": false,
-      "claim_method": "none",
-      "required_capabilities": ["audit", "veto", "qa"],
-      "preferred_capabilities": ["meta-governance"],
-      "allowed_files": [],
-      "forbidden_files": ["constitution.md", "genesis_payload.toml", "docs/harness/broadcast/TASK_BOARD.json", "src/**", "docs/**", "tests/**"],
-      "task_packet": "docs/harness/broadcast/tasks/V5-SYS-A11-AUDIT-VETO-001.r1.task.json",
-      "acceptance_tests": ["jq . docs/harness/broadcast/TASK_BOARD.json", "git diff --check", "cargo test --workspace"],
-      "duplicate_policy": "no_duplicates",
-      "blockers": ["V5-SYS-A10-HARNESS-THINNING-001"]
+      "task_packet": "docs/harness/broadcast/tasks/V5-STRESS-DUPLICATE-CLAIM-001.r1.task.json",
+      "title": "Duplicate claim stress canary"
     }
-  ]
+  ],
+  "worker_halt_required": true
 }
