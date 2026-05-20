@@ -10,10 +10,10 @@ Workers start from the main checkout for intake only:
 cd /home/zephryj/projects/turingosv5
 ```
 
-Task code must be edited in:
+Primary WorkerAI task code is submitted through a generated soft sandbox:
 
 ```text
-/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>
+/home/zephryj/projects/turingosv5-sandboxes/<worker_slot>/<atom_id>
 ```
 
 ## Single-Shot Loop
@@ -23,34 +23,27 @@ Task code must be edited in:
 3. Read `docs/harness/roles/WORKER_ENTRY.md`.
 4. Read `docs/harness/WORKER_HARNESS.md`.
 5. Read `docs/harness/TASK_BROADCAST_POLICY.md`.
-6. Read `docs/harness/broadcast/TASK_BOARD.json`.
-7. Pick exactly one eligible open task.
-8. Read the TaskPacket.
-9. Run `git fetch origin` and `gh pr list --state open`.
-10. Skip any atom with an active valid draft PR claim.
-11. Create branch `work/<atom_id>/<worker_slot>` from `origin/main`.
-12. Create the isolated task worktree.
-13. Re-check open PRs for the same atom before implementation edits.
-14. If another valid claim appeared, output `[WORKER_HALT]` and stop.
-15. Create a claim commit.
-16. Open a draft PR titled `[CLAIM][<atom_id>][ClassX] <task title>`.
-17. Refresh open PRs; if an earlier valid claim exists by `createdAt`, mark the
-    current PR duplicate/superseded when possible, output `[WORKER_HALT]`, and
-    stop.
-18. Modify only allowed files.
-19. Run required tests.
-20. Update the same PR with WorkerReport.
-21. Run `gh pr ready`.
-22. Output `[WORKER_HALT]`.
-23. Stop the current task.
+6. Read `docs/harness/broadcast/TASK_BOARD.json` as a projection only.
+7. Claim exactly one eligible open task through:
+   `turingos-dev worker claim next --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --out-root /home/zephryj/projects/turingosv5-sandboxes --worker <worker_slot>`.
+8. Read the generated sandbox `TASK.md`, `CONTEXT.md`, and exported
+   `allowed_files/**`.
+9. Modify no repo files directly. Write only `submit/candidate.patch` and
+   `submit/WorkerReport.json` inside the sandbox.
+10. Submit through:
+   `turingos-dev worker sandbox submit --dir <sandbox> --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --worktree-root /home/zephryj/projects/turingosv5-worktrees --worker <worker_slot>`.
+11. Output `[WORKER_HALT]`.
+12. Stop the current task.
 
 H0 smoke workers must not run an automatic task loop. One worker process handles
-one selected TaskPacket, opens one PR, reports once, prints `[WORKER_HALT]`, and
-stops.
+one selected TaskPacket, submits once, prints `[WORKER_HALT]`, and stops.
 
 ## ClaimRecord
 
-The draft claim PR body must include:
+Legacy draft PR fallback is available only when a TaskPacket or Meta
+continuation explicitly asks for `claim_method: "draft_pr"`.
+
+The legacy draft claim PR body must include:
 
 - board version/hash
 - TaskPacket path/hash
@@ -61,7 +54,8 @@ The draft claim PR body must include:
 
 The same PR becomes the ready implementation PR; do not open a second PR.
 
-Claim first, code after. A worker must not begin implementation until its draft
+Claim first, code after. A worker must not begin implementation until
+`turingos-dev worker claim next` has produced a sandbox, or until a legacy draft
 PR claim is visible and no earlier valid claim owns the same atom.
 
 ## Never
@@ -81,9 +75,9 @@ PR claim is visible and no earlier valid claim owns the same atom.
 ## Eligibility
 
 A task is eligible only when `status == "open"`, `self_select == true`,
-`claim_required == true`, `claim_method == "draft_pr"`, class is within the
-worker profile, required capabilities match, blockers are empty, and no active
-claim blocks the atom.
+`claim_required == true`, class is within the worker profile, required
+capabilities match, blockers are empty, and no active claim blocks the atom.
+Sandbox intake is primary; `claim_method == "draft_pr"` is legacy fallback.
 
 After PR submission, stop. Continuation requires Meta request or a new
 TaskPacket.

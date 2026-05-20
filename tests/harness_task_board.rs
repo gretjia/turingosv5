@@ -534,7 +534,7 @@ fn harness_worker_lifecycle_is_single_shot_and_requires_halt() {
 }
 
 #[test]
-fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
+fn harness_worker_claim_protocol_is_sandbox_first_with_draft_pr_fallback() {
     let root = repo_root();
     let entry = fs::read_to_string(root.join("docs/harness/roles/WORKER_ENTRY.md"))
         .expect("WORKER_ENTRY.md should be readable");
@@ -551,24 +551,24 @@ fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
             "workers must start intake from the V5 main directory"
         );
         assert!(
-            text.contains("/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>"),
-            "workers must create task code in the isolated worktree path"
+            text.contains("turingos-dev worker claim next"),
+            "workers must claim through TuringOS sandbox intake"
         );
         assert!(
-            text.contains("work/<atom_id>/<worker_slot>"),
-            "workers must use the standard work branch pattern"
+            text.contains("/home/zephryj/projects/turingosv5-sandboxes"),
+            "workers must receive a generated sandbox"
         );
         assert!(
-            text.contains("origin/main"),
-            "workers must create worktrees from latest origin/main"
+            text.contains("turingos-dev worker sandbox submit"),
+            "workers must submit sandbox output through TuringOS"
         );
         assert!(
-            text.contains("[CLAIM][<atom_id>][ClassX] <task title>"),
-            "workers must open a draft PR claim with the standard title"
+            text.contains("submit/candidate.patch") && text.contains("submit/WorkerReport.json"),
+            "workers must submit only patch plus WorkerReport"
         );
         assert!(
-            text.contains("gh pr ready"),
-            "workers must convert the same draft PR to ready"
+            text.contains("claim_method: \"draft_pr\""),
+            "workers must preserve legacy draft PR fallback wording"
         );
     }
 
@@ -576,17 +576,18 @@ fn harness_worker_claim_protocol_is_draft_pr_from_isolated_worktree() {
         assert!(
             text.to_lowercase().contains("claim before code")
                 || text.to_lowercase().contains("claim first, code after"),
-            "workers must claim by draft PR before implementation"
+            "workers must claim before implementation"
         );
     }
     assert!(
-        entry.contains("Before making any implementation edit")
-            && worker_harness.contains("before implementation edits"),
-        "workers must re-check active claims before writing implementation code"
+        task_packet.contains("claim_method: \"sandbox\"")
+            && task_packet.contains("turingos-dev worker claim next"),
+        "TaskPacket template must default to sandbox intake"
     );
     assert!(
-        entry.contains("After the draft PR exists") && worker_harness.contains("Refresh open PRs"),
-        "workers must re-check claim ownership after opening the draft PR"
+        entry.contains("[CLAIM][<atom_id>][ClassX] <task title>")
+            && worker_harness.contains("draft PR"),
+        "legacy draft PR claim title remains documented for fallback"
     );
     assert!(
         task_policy.contains("createdAt") && task_policy.contains("earliest valid claim"),
