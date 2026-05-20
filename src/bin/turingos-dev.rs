@@ -2,10 +2,10 @@ use serde_json::Value;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use std::process;
+use std::process::{self, Command};
 use turingosv5::devtool::{
-    append_event, audit_board_drift, console_text, derive_board, merge_check, AppendInput,
-    MergeGateDecision,
+    append_event, audit_board_drift, console_text, derive_board, merge_check,
+    meta_reconcile_report, AppendInput, MergeGateDecision,
 };
 
 fn main() {
@@ -72,9 +72,48 @@ fn run() -> Result<(), String> {
                 Err("merge gate did not proceed".to_string())
             }
         }
+        [meta, reconcile, rest @ ..] if meta == "meta" && reconcile == "reconcile" => {
+            if !rest.iter().any(|arg| arg == "--dry-run") {
+                return Err("meta reconcile currently requires --dry-run".to_string());
+            }
+            let board_path = flag_path(rest, "--board")?;
+            let board: Value =
+                serde_json::from_slice(&fs::read(board_path).map_err(|err| err.to_string())?)
+                    .map_err(|err| err.to_string())?;
+            let prs = if let Some(path) = optional_flag_path(rest, "--prs-file") {
+                serde_json::from_slice(&fs::read(path).map_err(|err| err.to_string())?)
+                    .map_err(|err| err.to_string())?
+            } else {
+                github_open_prs()?
+            };
+            let report = meta_reconcile_report(&board, &prs).map_err(|err| err.to_string())?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&report).map_err(|err| err.to_string())?
+            );
+            Ok(())
+        }
         [console, rest @ ..] if console == "console" => run_console(rest),
         _ => Err(usage()),
     }
+}
+
+fn github_open_prs() -> Result<Value, String> {
+    let output = Command::new("gh")
+        .args([
+            "pr",
+            "list",
+            "--state",
+            "open",
+            "--json",
+            "number,title,headRefName,isDraft,createdAt,url,body,mergeStateStatus,statusCheckRollup",
+        ])
+        .output()
+        .map_err(|err| err.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    serde_json::from_slice(&output.stdout).map_err(|err| err.to_string())
 }
 
 fn run_console(args: &[String]) -> Result<(), String> {
@@ -127,6 +166,7 @@ fn usage() -> String {
         "  turingos-dev board derive --store <events.jsonl> --out <board.json>",
         "  turingos-dev audit --store <events.jsonl> --board <board.json>",
         "  turingos-dev merge check --store <events.jsonl> --pr <number>",
+        "  turingos-dev meta reconcile --dry-run --board <board.json> [--prs-file <prs.json>]",
     ]
     .join("\n")
 }

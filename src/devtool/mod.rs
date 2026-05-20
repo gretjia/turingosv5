@@ -348,8 +348,9 @@ pub fn console_frame(store: &Path, show_help: bool) -> DevToolResult<String> {
     lines.push(
         "+ Commands ------------------------------------------------------------+".to_string(),
     );
-    lines
-        .push("| [w] welcome   [r] refresh   [h] help   [q] quit                    |".to_string());
+    lines.push(
+        "| [m] meta reconcile   [w] welcome   [r] refresh   [h] help   [q] quit |".to_string(),
+    );
     if show_help {
         lines.push(
             "+ Help ----------------------------------------------------------------+".to_string(),
@@ -359,6 +360,9 @@ pub fn console_frame(store: &Path, show_help: bool) -> DevToolResult<String> {
         );
         lines.push(
             "| Use turingos-dev event append / board derive for state changes.     |".to_string(),
+        );
+        lines.push(
+            "| Meta reconcile is a one-shot dry-run over board + open PR claims.   |".to_string(),
         );
     }
     lines.push(
@@ -1013,6 +1017,86 @@ pub fn merge_check(store: &Path, pr_number: u64) -> DevToolResult<MergeGateResul
     }
 }
 
+pub fn meta_reconcile_report(board: &Value, prs: &Value) -> DevToolResult<Value> {
+    let tasks = board
+        .get("tasks")
+        .and_then(Value::as_array)
+        .ok_or_else(|| DevToolError::new("board.tasks must be an array"))?;
+    let prs = prs
+        .as_array()
+        .ok_or_else(|| DevToolError::new("prs must be an array"))?;
+
+    let mut task_status: BTreeMap<String, String> = BTreeMap::new();
+    let mut open_task_atoms = Vec::new();
+    for task in tasks {
+        let atom = task.get("atom_id").and_then(Value::as_str).unwrap_or("");
+        if atom.is_empty() {
+            continue;
+        }
+        let status = task.get("status").and_then(Value::as_str).unwrap_or("open");
+        task_status.insert(atom.to_string(), status.to_string());
+        if status == "open" {
+            open_task_atoms.push(Value::String(atom.to_string()));
+        }
+    }
+
+    let mut claims: BTreeMap<String, Vec<&Value>> = BTreeMap::new();
+    let mut actions = Vec::new();
+    for pr in prs {
+        if let Some(atom) = claim_atom(pr) {
+            claims.entry(atom).or_default().push(pr);
+        } else {
+            actions.push(pr_action(pr, Value::Null, "orphan_pr", false));
+        }
+    }
+
+    for (atom, mut atom_prs) in claims {
+        atom_prs.sort_by_key(|pr| pr_string(pr, "createdAt"));
+        for (index, pr) in atom_prs.iter().enumerate() {
+            let status = task_status.get(&atom).map(String::as_str);
+            let needs_report = !has_worker_report(pr);
+            let action = if index > 0 {
+                "supersede_duplicate_claim"
+            } else if matches!(
+                status,
+                Some("merged") | Some("superseded") | Some("retired")
+            ) {
+                "supersede_closed_task_claim"
+            } else if pr_string(pr, "mergeStateStatus").eq_ignore_ascii_case("DIRTY") {
+                "hold_dirty_claim"
+            } else if status == Some("pr_open") && !needs_report && has_failed_check(pr) {
+                "hold_failed_ci"
+            } else if status == Some("pr_open")
+                && !needs_report
+                && pr_string(pr, "mergeStateStatus") != "CLEAN"
+            {
+                "hold_until_branch_updated"
+            } else if status == Some("pr_open") && !needs_report {
+                "run_merge_check"
+            } else if status == Some("claimed") && needs_report {
+                "await_worker_report"
+            } else if needs_report {
+                "record_task_claim"
+            } else {
+                "record_worker_report"
+            };
+            actions.push(pr_action(
+                pr,
+                Value::String(atom.clone()),
+                action,
+                needs_report,
+            ));
+        }
+    }
+
+    Ok(json!({
+        "mode": "dry-run",
+        "scanned_prs": prs.len(),
+        "open_task_atoms": open_task_atoms,
+        "actions": actions
+    }))
+}
+
 fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Value {
     json!({
         "atom_id": atom_id,
@@ -1046,6 +1130,55 @@ fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Val
         "merge_decision_cid": task.get("merge_decision_cid").cloned().unwrap_or(Value::Null),
         "source_event_cids": source_event_cids
     })
+}
+
+fn claim_atom(pr: &Value) -> Option<String> {
+    let title = pr.get("title")?.as_str()?;
+    let rest = title.strip_prefix("[CLAIM][")?;
+    let (atom, _) = rest.split_once("]")?;
+    if atom.is_empty() {
+        None
+    } else {
+        Some(atom.to_string())
+    }
+}
+
+fn has_worker_report(pr: &Value) -> bool {
+    let body = pr.get("body").and_then(Value::as_str).unwrap_or("");
+    body.contains("WorkerReport") && body.contains("[WORKER_HALT]")
+}
+
+fn has_failed_check(pr: &Value) -> bool {
+    pr.get("statusCheckRollup")
+        .and_then(Value::as_array)
+        .is_some_and(|checks| {
+            checks.iter().any(|check| {
+                matches!(
+                    check.get("conclusion").and_then(Value::as_str),
+                    Some("FAILURE") | Some("CANCELLED") | Some("TIMED_OUT")
+                )
+            })
+        })
+}
+
+fn pr_action(pr: &Value, atom_id: Value, action: &str, needs_worker_report: bool) -> Value {
+    json!({
+        "pr_number": pr.get("number").cloned().unwrap_or(Value::Null),
+        "url": pr.get("url").cloned().unwrap_or(Value::Null),
+        "atom_id": atom_id,
+        "action": action,
+        "needs_worker_report": needs_worker_report,
+        "is_draft": pr.get("isDraft").cloned().unwrap_or(Value::Null),
+        "created_at": pr.get("createdAt").cloned().unwrap_or(Value::Null),
+        "merge_state_status": pr.get("mergeStateStatus").cloned().unwrap_or(Value::Null)
+    })
+}
+
+fn pr_string(pr: &Value, key: &str) -> String {
+    pr.get(key)
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string()
 }
 
 fn hash_json(value: &Value) -> DevToolResult<String> {
