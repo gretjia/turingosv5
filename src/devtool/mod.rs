@@ -746,7 +746,16 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
                 let atom_id = payload_string(record, "atom_id")?;
                 remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
                 if let Some(task) = tasks.get_mut(&atom_id) {
-                    task["status"] = json!("pr_open");
+                    task["status"] = if record
+                        .payload
+                        .get("pr_number")
+                        .and_then(Value::as_u64)
+                        .is_some()
+                    {
+                        json!("pr_open")
+                    } else {
+                        json!("submitted")
+                    };
                     copy_optional(&record.payload, task, "pr_number");
                 }
                 source_hashes

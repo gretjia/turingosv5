@@ -76,6 +76,7 @@
           "enum": [
             "open",
             "claimed",
+            "submitted",
             "pr_open",
             "needs_repair",
             "merged",
