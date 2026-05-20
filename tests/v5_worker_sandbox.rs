@@ -89,10 +89,13 @@ fn worker_sandbox_create_exports_only_allowed_context_and_submit_contract() {
     assert!(sandbox.join("submit").is_dir());
 
     let task_text = fs::read_to_string(sandbox.join("TASK.md")).expect("task should read");
+    let context_text = fs::read_to_string(sandbox.join("CONTEXT.md")).expect("context should read");
     assert!(task_text.contains("candidate.patch"));
     assert!(task_text.contains("WorkerReport.json"));
     assert!(task_text.contains("[WORKER_HALT]"));
     assert!(task_text.contains("soft sandbox"));
+    assert!(context_text.contains("do not read the full repo"));
+    assert!(context_text.contains("ask MetaAI for a richer context bundle"));
 
     let manifest: Value = serde_json::from_slice(
         &fs::read(sandbox.join("sandbox_manifest.json")).expect("manifest should exist"),
@@ -162,4 +165,22 @@ fn worker_sandbox_validate_accepts_allowed_patch_and_halt_report() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("SANDBOX_SUBMISSION_PASS"));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("not_run_by_sandbox_v0"));
+}
+
+#[test]
+fn turingos_dev_help_exits_successfully_for_worker_clients() {
+    let output = Command::new(bin())
+        .arg("--help")
+        .output()
+        .expect("help should run");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("worker sandbox create"));
+    assert!(stdout.contains("worker sandbox validate"));
 }
