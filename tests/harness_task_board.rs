@@ -657,6 +657,57 @@ fn remote_worker_prompt_preserves_board_self_selection() {
 }
 
 #[test]
+fn remote_worker_prompt_has_workspace_gate_sparse_profile() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("Workspace gate context"),
+        "remote prompt must name the expanded context used only for full workspace gates"
+    );
+    for required_path in [
+        "/Cargo.toml",
+        "/Cargo.lock",
+        "'/src/**'",
+        "'/tests/**'",
+        "'/docs/**'",
+        "'/schemas/**'",
+        "/README.md",
+        "/AGENTS.md",
+        "/AGENT_ENTRY.md",
+        "/CHARTER.md",
+        "/CODEX.md",
+        "/CLAUDE.md",
+        "/GEMINI.md",
+    ] {
+        assert!(
+            prompt.contains(required_path),
+            "workspace gate sparse profile must include {required_path}"
+        );
+    }
+    assert!(
+        prompt.contains("cargo test --workspace"),
+        "workspace gate profile must be tied to cargo test --workspace"
+    );
+}
+
+#[test]
+fn remote_worker_prompt_documents_pr_body_rest_fallback() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("GraphQL") && prompt.contains("Projects"),
+        "remote prompt must document the known gh pr edit GraphQL/Projects failure"
+    );
+    assert!(
+        prompt.contains("gh api -X PATCH")
+            && prompt.contains("\"repos/$REPO_NAME/pulls/$PR_NUMBER\""),
+        "remote prompt must provide REST fallback for PR body updates"
+    );
+}
+
+#[test]
 fn task_broadcast_policy_names_market_then_sandbox_phases() {
     let root = repo_root();
     let policy = read_text(root.join("docs/harness/TASK_BROADCAST_POLICY.md"));
