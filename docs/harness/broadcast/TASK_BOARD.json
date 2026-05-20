@@ -51,7 +51,18 @@
     "sha256:78da95f604c5cbf5bcd7b2fd158d732c4eff7c76e4ee8f63fa0fdfab9d1bfd72",
     "sha256:18ed9c463d6a73ea300bff09dc53a00b92823756c964742c762176aca46dd1ae",
     "sha256:138d6aaa7d422a8688e75a96e7ce8fb5d579dc93b5708b885b5d90d091b3c90c",
-    "sha256:79c72847132f18637c5f9b18348badbf3ea653ae2a55b93548bd5bbd20f9ef5f"
+    "sha256:79c72847132f18637c5f9b18348badbf3ea653ae2a55b93548bd5bbd20f9ef5f",
+    "sha256:3f6e4a9118509abc5a0e9588ae42afb22ca0f0238f70e9bf56c081b921297d34",
+    "sha256:641dc7b065a93eccf58a525fc7b9bb56a56c71de7d978aced4b815a34758df5e",
+    "sha256:4a5120e442100c3348abbccda24bda8e0bf5ff279880799dbee2090affa30489",
+    "sha256:4da90161e20dd0c8ed734905550f373be2cffe9335c636c780b2b50947ff6205",
+    "sha256:dabcf6bb18630eabbc82f407be3775e52ed23416a8e05407866ef6c8ef829e98",
+    "sha256:59a77e6ea1b2e58adb13e111e21ed56b1aca2bb4e91ba10006597c99b5d0d7ad",
+    "sha256:bf97827bc17bd0d1128385d150d68f3078f45ee7f5953153c4806c008a71ee25",
+    "sha256:b5c72ea1fe1b856ac3cb87584fb982c3e09e6b9cf4253c02b1fc234ea1a1c640",
+    "sha256:738010043d48f4d06c361edf56ba4064e9216871a13cee908da18e89086d082a",
+    "sha256:7ad2aca0cda8eb152282b76cce987dc068ff901acab21305ce2feb1d2b280ba6",
+    "sha256:935bba53f1ee111bc3bbc57c25af7e8cdd6c90f8c94b131aa1493f47abc6f0df"
   ],
   "tasks": [
     {
@@ -84,10 +95,15 @@
         ".turingos_system/**"
       ],
       "lane": "RealityProof",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K0",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "audit",
         "harness"
@@ -102,6 +118,7 @@
         "sha256:7f551189bf16def926a3c97d39d1b1d9cc7b921aa87c9fd055260fc3e103372e",
         "sha256:ca720f315276bb5285ec41414bde510380c39b85b537b8325a93315077241b04"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K0-C0-REALITY-MAP-HARD-GATE-001.r1.task.json",
       "title": "Reality Map hard gate from final task book"
@@ -137,10 +154,15 @@
         ".turingos_system/**"
       ],
       "lane": "ArchitectureDocs",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K0",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "harness"
       ],
@@ -154,6 +176,7 @@
         "sha256:085364a1a297d9d8e3191523e389b792f84a8e30efbd6c0667e10a30e7677074",
         "sha256:fe36484daf8d1d1498c8c9ea72bb0f3ffd00d1a924b31706586aa34ec4f9b261"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K0-C1-PATH-DECISION-CHRONOLOGY-001.r1.task.json",
       "title": "Path decision and chronology seal"
@@ -188,10 +211,15 @@
         ".turingos_system/**"
       ],
       "lane": "PolicyTests",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K1",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "tests"
       ],
@@ -205,6 +233,7 @@
         "sha256:b1cc1397f1949a399b450c38ca2f924342c80a9babe56b6f60103a8d55c16a65",
         "sha256:52d57edce0bede0b4cfe92903eef9a333b0c2f9ad22385996db0a3ac9363622f"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001.r1.task.json",
       "title": "No-new-substrate regression checklist"
@@ -239,10 +268,15 @@
         ".turingos_system/**"
       ],
       "lane": "EvidenceDocs",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K1",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "tests"
       ],
@@ -256,6 +290,7 @@
         "sha256:7351b97ddda9aabe0bac39b608fa37bf16a68c2a298e9a69c25f9da6b10b90a4",
         "sha256:eac33126bc4acde17e95c1a643296024a1fca25e59d435d0a95df178fd323f1e"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001.r1.task.json",
       "title": "LLM call evidence inventory contract"
@@ -291,10 +326,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K2",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "schema",
         "tests"
@@ -309,6 +349,7 @@
         "sha256:05d8da3611962e126f3370107b066687046826326c660d0e8d1f4347a98f225c",
         "sha256:7c367615078e1170911754fb2deabcbb0a65f2cd2407977bcb874bde388e372a"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K2-C4-ARTIFACT-BUNDLE-CONTRACT-001.r1.task.json",
       "title": "ArtifactBundle contract seed"
@@ -344,10 +385,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K3",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "schema",
         "tests"
@@ -362,6 +408,7 @@
         "sha256:046952d96053ca8f493d11a0f576032ae61436b46c03a6a194fc3bf8cb6f4f80",
         "sha256:71517a1d851f5f3ff0e2407d0ecda91bf1130abe7c8e1d84f5c1a56c7e4fc38c"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K3-C5-PREVIEW-TRUTH-PATH-CONTRACT-001.r1.task.json",
       "title": "Preview truth path contract seed"
@@ -396,10 +443,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K4",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "tests"
       ],
@@ -413,6 +465,7 @@
         "sha256:83944cecf6eefd0804a2c05ad08f3df734c8e29b5b3e245fb68461ec29a4b1b2",
         "sha256:f622d4764d9120050c9e87c95ce8d510be9a903cecae7a55317675f47c489cb3"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K4-C6-BUILD-SESSION-DERIVED-VIEW-001.r1.task.json",
       "title": "BuildSession derived view contract"
@@ -446,10 +499,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K4",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "tests"
       ],
@@ -463,6 +521,7 @@
         "sha256:1c55f437db05efec3bc9e3ec11a049e34cd0b90a5fbed0436eba681e7c422d83",
         "sha256:9d4f7964b2580c9adf1c255b4357e7e88083b499bb2579a480ed86cf2ae959e8"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K4-C7-FRIENDLY-ERROR-L4E-CONTRACT-001.r1.task.json",
       "title": "Friendly error and L4.E contract"
@@ -496,10 +555,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K4",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "tests"
       ],
@@ -513,6 +577,7 @@
         "sha256:005b4155c6ae3133bccdc4c29471816946b39313a3a8291183ac9f3943a43d34",
         "sha256:03a91f75a177387806c6e4e6ae4fe6aee1b24c27ac75a458da112d16c998e3d8"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K4-C8-SINGLE-URL-MVP-CONTRACT-001.r1.task.json",
       "title": "Single URL MVP contract"
@@ -546,10 +611,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K5",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "tests"
       ],
@@ -563,6 +633,7 @@
         "sha256:ccb8cb9e4680ef2446f196a3301be8c7cec1f5430d2faeef535398560e2550be",
         "sha256:6aa821ed52c857da68e622dbb3d0e1544ac4dc8497126f663e45ed4bd2adcc8a"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K5-C9-EDIT-REGENERATE-VERSIONING-001.r1.task.json",
       "title": "Edit/regenerate versioning contract"
@@ -598,10 +669,15 @@
         ".turingos_system/**"
       ],
       "lane": "ProductContract",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K6",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "schema",
         "tests"
@@ -616,6 +692,7 @@
         "sha256:673bb3f6272b4fb8d33f43f0fa50f9ead9ef84229a8c53736917fac1af2bc73b",
         "sha256:da5073ee4f9156a7458b64c89f40a422db6872549d339e3139ed112ddfd5f922"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K6-C10-SPEC-DERIVED-TESTRUN-001.r1.task.json",
       "title": "Spec-derived TestRun contract"
@@ -649,10 +726,15 @@
         ".turingos_system/**"
       ],
       "lane": "AuditContract",
+      "main_after": null,
+      "merge_commit_sha": null,
       "merge_decision": null,
+      "merge_decision_cid": null,
+      "merge_method": null,
       "meta_opened": true,
       "phase": "V5-K7",
       "pr_number": null,
+      "pr_url": null,
       "preferred_capabilities": [
         "tests"
       ],
@@ -666,6 +748,7 @@
         "sha256:45305e4830ccff10ccd1a5ce233c67c85225c1facbbc8ba24338160d7b85b924",
         "sha256:78da95f604c5cbf5bcd7b2fd158d732c4eff7c76e4ee8f63fa0fdfab9d1bfd72"
       ],
+      "squash_commit_sha": null,
       "status": "open",
       "task_packet": "docs/harness/broadcast/tasks/V5-K7-C11-AUDIT-PACKET-CONTRACT-001.r1.task.json",
       "title": "Audit packet contract"
@@ -698,10 +781,15 @@
         ".turingos_system/**"
       ],
       "lane": "ClaimCoordination",
-      "merge_decision": null,
+      "main_after": "ee698bf6fb69dbf9c1dd1b990aa22c8bff0c6673",
+      "merge_commit_sha": "ee698bf6fb69dbf9c1dd1b990aa22c8bff0c6673",
+      "merge_decision": "PROCEED",
+      "merge_decision_cid": null,
+      "merge_method": "squash",
       "meta_opened": true,
       "phase": "V5-STRESS",
-      "pr_number": null,
+      "pr_number": 7,
+      "pr_url": "https://github.com/gretjia/turingosv5/pull/7",
       "preferred_capabilities": [
         "harness"
       ],
@@ -713,9 +801,14 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:18ed9c463d6a73ea300bff09dc53a00b92823756c964742c762176aca46dd1ae",
-        "sha256:138d6aaa7d422a8688e75a96e7ce8fb5d579dc93b5708b885b5d90d091b3c90c"
+        "sha256:138d6aaa7d422a8688e75a96e7ce8fb5d579dc93b5708b885b5d90d091b3c90c",
+        "sha256:3f6e4a9118509abc5a0e9588ae42afb22ca0f0238f70e9bf56c081b921297d34",
+        "sha256:641dc7b065a93eccf58a525fc7b9bb56a56c71de7d978aced4b815a34758df5e",
+        "sha256:dabcf6bb18630eabbc82f407be3775e52ed23416a8e05407866ef6c8ef829e98",
+        "sha256:738010043d48f4d06c361edf56ba4064e9216871a13cee908da18e89086d082a"
       ],
-      "status": "open",
+      "squash_commit_sha": "ee698bf6fb69dbf9c1dd1b990aa22c8bff0c6673",
+      "status": "merged",
       "task_packet": "docs/harness/broadcast/tasks/V5-STRESS-DUPLICATE-CLAIM-001.r1.task.json",
       "title": "Duplicate claim stress canary"
     }
