@@ -31,3 +31,11 @@ Regenerate should therefore be treated as:
 - Overwriting an existing artifact by replacement.
 - Directly patching files of old artifacts.
 - Introducing a fresh LLM call path for regeneration content.
+
+## Required prohibitions
+
+The regenerate path must explicitly preserve these prohibitions:
+
+- It must not replace prior artifacts.
+- It must not mutate prior artifact records.
+- It must not discard historical preview references.
