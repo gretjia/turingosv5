@@ -29,7 +29,8 @@ must include:
 - media_type
 - role
 
-File paths are relative paths inside the bundle. The file list is evidence for
+File paths are relative paths inside the bundle. They must not be absolute paths
+and must not contain parent traversal segments. The file list is evidence for
 what was produced; it is not a naked HTML string and it is not a cache snapshot.
 
 ## Entrypoint
@@ -37,7 +38,9 @@ what was produced; it is not a naked HTML string and it is not a cache snapshot.
 `entrypoint` names one path from `files` as the first preview/build target. For
 single-page web output this is usually an HTML file path. The entrypoint must be
 inside the bundle file list so preview and audit code can resolve output through
-the bundle contract instead of local workspace layout.
+the bundle contract instead of local workspace layout. The JSON schema declares
+this as a TuringOS deterministic invariant because standard JSON Schema cannot
+compare one scalar field against all values inside a sibling array.
 
 ## Invalid Shapes
 

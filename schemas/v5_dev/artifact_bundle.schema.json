@@ -2,6 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "turingos.v5.artifact_bundle.v0.1",
   "title": "ArtifactBundle",
+  "x-turingos-invariants": [
+    "entrypoint_must_match_files_path"
+  ],
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -42,7 +45,9 @@
         "properties": {
           "path": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+",
+            "description": "Bundle-relative path. Absolute paths and parent traversal are invalid."
           },
           "content_cid": {
             "type": "string",
@@ -69,6 +74,7 @@
     "entrypoint": {
       "type": "string",
       "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+",
       "description": "Bundle-relative path to the first preview or build target."
     }
   }

@@ -74,6 +74,30 @@ fn artifact_bundle_file_entries_are_cid_addressed() {
 }
 
 #[test]
+fn artifact_bundle_paths_are_bundle_relative() {
+    let schema = read_json("schemas/v5_dev/artifact_bundle.schema.json");
+    let file_path = &schema["properties"]["files"]["items"]["properties"]["path"];
+    let entrypoint = &schema["properties"]["entrypoint"];
+
+    let expected_pattern = "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+";
+    assert_eq!(file_path["pattern"], expected_pattern);
+    assert_eq!(entrypoint["pattern"], expected_pattern);
+}
+
+#[test]
+fn artifact_bundle_schema_declares_entrypoint_membership_invariant() {
+    let schema = read_json("schemas/v5_dev/artifact_bundle.schema.json");
+    let invariants = schema["x-turingos-invariants"]
+        .as_array()
+        .expect("schema must declare deterministic TuringOS invariants");
+
+    assert!(
+        invariants.iter().any(|value| value == "entrypoint_must_match_files_path"),
+        "schema must require deterministic validation that entrypoint is one of files[*].path"
+    );
+}
+
+#[test]
 fn artifact_bundle_contract_names_boundaries_and_required_terms() {
     let contract = read_text("docs/contracts/artifact_bundle.md");
 
