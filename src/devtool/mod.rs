@@ -689,6 +689,7 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
     let mut source_hashes: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut broadcast_order = Vec::new();
     let mut broadcasted = BTreeSet::new();
+    let mut pr_atoms: BTreeMap<u64, String> = BTreeMap::new();
 
     for record in &records {
         match event_type(record)?.as_str() {
@@ -721,6 +722,7 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
             }
             "TaskClaimed" => {
                 let atom_id = payload_string(record, "atom_id")?;
+                remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
                 if let Some(task) = tasks.get_mut(&atom_id) {
                     task["status"] = json!("claimed");
                     copy_optional(&record.payload, task, "pr_number");
@@ -732,6 +734,7 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
             }
             "WorkerReportSubmitted" => {
                 let atom_id = payload_string(record, "atom_id")?;
+                remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
                 if let Some(task) = tasks.get_mut(&atom_id) {
                     task["status"] = json!("pr_open");
                     copy_optional(&record.payload, task, "pr_number");
@@ -743,8 +746,41 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
             }
             "MergeDecisionRecorded" => {
                 let atom_id = payload_string(record, "atom_id")?;
+                remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
                 if let Some(task) = tasks.get_mut(&atom_id) {
                     copy_as(&record.payload, task, "decision", "merge_decision");
+                }
+                source_hashes
+                    .entry(atom_id)
+                    .or_default()
+                    .push(record.record_hash.clone());
+            }
+            "PRMerged" => {
+                let atom_id = record
+                    .payload
+                    .get("atom_id")
+                    .and_then(Value::as_str)
+                    .map(str::to_string)
+                    .or_else(|| {
+                        record
+                            .payload
+                            .get("pr_number")
+                            .and_then(Value::as_u64)
+                            .and_then(|pr_number| pr_atoms.get(&pr_number).cloned())
+                    });
+                let Some(atom_id) = atom_id else {
+                    continue;
+                };
+                remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
+                if let Some(task) = tasks.get_mut(&atom_id) {
+                    task["status"] = json!("merged");
+                    copy_optional(&record.payload, task, "pr_number");
+                    copy_optional(&record.payload, task, "pr_url");
+                    copy_optional(&record.payload, task, "merge_method");
+                    copy_optional(&record.payload, task, "main_after");
+                    copy_optional(&record.payload, task, "merge_commit_sha");
+                    copy_optional(&record.payload, task, "squash_commit_sha");
+                    copy_optional(&record.payload, task, "merge_decision_cid");
                 }
                 source_hashes
                     .entry(atom_id)
@@ -1001,7 +1037,13 @@ fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Val
         "duplicate_policy": task.get("duplicate_policy").cloned().unwrap_or_else(|| json!("first_valid_pr_wins")),
         "blockers": task.get("blockers").cloned().unwrap_or_else(|| json!([])),
         "pr_number": task.get("pr_number").cloned().unwrap_or(Value::Null),
+        "pr_url": task.get("pr_url").cloned().unwrap_or(Value::Null),
         "merge_decision": task.get("merge_decision").cloned().unwrap_or(Value::Null),
+        "merge_method": task.get("merge_method").cloned().unwrap_or(Value::Null),
+        "main_after": task.get("main_after").cloned().unwrap_or(Value::Null),
+        "merge_commit_sha": task.get("merge_commit_sha").cloned().unwrap_or(Value::Null),
+        "squash_commit_sha": task.get("squash_commit_sha").cloned().unwrap_or(Value::Null),
+        "merge_decision_cid": task.get("merge_decision_cid").cloned().unwrap_or(Value::Null),
         "source_event_cids": source_event_cids
     })
 }
@@ -1099,6 +1141,12 @@ fn copy_optional(from: &Value, to: &mut Value, key: &str) {
 fn copy_as(from: &Value, to: &mut Value, source: &str, target: &str) {
     if let Some(value) = from.get(source) {
         to[target] = value.clone();
+    }
+}
+
+fn remember_pr_atom(payload: &Value, atom_id: &str, pr_atoms: &mut BTreeMap<u64, String>) {
+    if let Some(pr_number) = payload.get("pr_number").and_then(Value::as_u64) {
+        pr_atoms.insert(pr_number, atom_id.to_string());
     }
 }
 
