@@ -433,7 +433,7 @@ fn harness_task_board_publishes_final_taskbook_wave_from_devtape() {
         ),
         (
             "V5-K0-C1-PATH-DECISION-CHRONOLOGY-001",
-            "open",
+            "pr_open",
             ["docs"].as_slice(),
         ),
         (
@@ -443,6 +443,11 @@ fn harness_task_board_publishes_final_taskbook_wave_from_devtape() {
         ),
         (
             "V5-STRESS-DUPLICATE-CLAIM-001",
+            "merged",
+            ["docs"].as_slice(),
+        ),
+        (
+            "V5-K4-C6-BUILD-SESSION-DERIVED-VIEW-001",
             "merged",
             ["docs"].as_slice(),
         ),
