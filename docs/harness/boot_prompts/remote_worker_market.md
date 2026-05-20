@@ -129,6 +129,31 @@ minimal Rust context:
 git sparse-checkout add /Cargo.toml /Cargo.lock '/src/**' '/tests/**'
 ```
 
+If an acceptance test or final gate requires `cargo test --workspace`, add the
+Workspace gate context before running it. This is still a sparse profile, not a
+full-repo intake; it includes the docs and schemas that the harness tests read:
+
+```bash
+git sparse-checkout add \
+  /Cargo.toml \
+  /Cargo.lock \
+  '/src/**' \
+  '/tests/**' \
+  '/docs/**' \
+  '/schemas/**' \
+  /README.md \
+  /AGENTS.md \
+  /AGENT_ENTRY.md \
+  /CHARTER.md \
+  /CODEX.md \
+  /CLAUDE.md \
+  /GEMINI.md
+```
+
+If `cargo test --workspace` fails with a missing file under `docs/`,
+`schemas/`, or a top-level entry document, add the missing path to the sparse
+checkout once and retry before declaring the task blocked.
+
 Implement the task with the smallest patch that satisfies the TaskPacket.
 Run the TaskPacket acceptance tests and `git diff --check`. Run
 `cargo fmt --check` and `cargo test --workspace` when Rust context was added.
@@ -166,9 +191,22 @@ WorkerReport
 - worker_halt_confirmation: "[WORKER_HALT]"
 EOF
 
+PR_NUMBER=$(gh pr view --repo "$REPO_NAME" --json number --jq .number)
 PR_URL=$(gh pr view --repo "$REPO_NAME" --json url --jq .url)
-gh pr edit "$PR_URL" --repo "$REPO_NAME" --body-file /tmp/turingos_worker_report.md
-gh pr ready "$PR_URL" --repo "$REPO_NAME"
+
+if ! gh pr edit "$PR_NUMBER" --repo "$REPO_NAME" --body-file /tmp/turingos_worker_report.md; then
+  echo "gh pr edit failed. If the error mentions GraphQL Projects classic, use REST fallback."
+  python3 - <<'PY'
+import json
+from pathlib import Path
+
+body = Path("/tmp/turingos_worker_report.md").read_text()
+Path("/tmp/turingos_worker_report.patch.json").write_text(json.dumps({"body": body}))
+PY
+  gh api -X PATCH "repos/$REPO_NAME/pulls/$PR_NUMBER" --input /tmp/turingos_worker_report.patch.json
+fi
+
+gh pr ready "$PR_NUMBER" --repo "$REPO_NAME"
 ```
 
 Final output:
