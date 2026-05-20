@@ -170,6 +170,29 @@ fn run() -> Result<(), String> {
             );
             Ok(())
         }
+        [worker, sandbox, submit, rest @ ..]
+            if worker == "worker" && sandbox == "sandbox" && submit == "submit" =>
+        {
+            let dir = flag_path(rest, "--dir")?;
+            let store = flag_path(rest, "--store")?;
+            let repo = flag_path(rest, "--repo")?;
+            let worktree_root = flag_path(rest, "--worktree-root")?;
+            let worker_slot = flag_value(rest, "--worker")?;
+            let create_pr = rest.iter().any(|arg| arg == "--create-pr");
+            let result = worker_sandbox_submit(
+                &dir,
+                &store,
+                &repo,
+                &worktree_root,
+                &worker_slot,
+                create_pr,
+            )?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&result).map_err(|err| err.to_string())?
+            );
+            Ok(())
+        }
         [worker, claim, next, rest @ ..]
             if worker == "worker" && claim == "claim" && next == "next" =>
         {
@@ -299,6 +322,239 @@ fn followup_event_type(action: Option<&str>) -> Option<&'static str> {
         "run_merge_check" => Some("MergeCheckRequested"),
         _ => None,
     }
+}
+
+fn worker_sandbox_submit(
+    dir: &std::path::Path,
+    store: &std::path::Path,
+    repo: &std::path::Path,
+    worktree_root: &std::path::Path,
+    worker_slot: &str,
+    create_pr: bool,
+) -> Result<Value, String> {
+    let manifest_path = dir.join("sandbox_manifest.json");
+    let manifest: Value = serde_json::from_slice(
+        &fs::read(&manifest_path)
+            .map_err(|err| format!("read {}: {err}", manifest_path.display()))?,
+    )
+    .map_err(|err| err.to_string())?;
+    let atom_id = manifest
+        .get("atom_id")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "sandbox_manifest.atom_id must be a string".to_string())?;
+    if !has_task_claim(store, atom_id)? {
+        return Err(format!("missing TaskClaimed for {atom_id}"));
+    }
+
+    let validation = validate_worker_sandbox_submission(dir).map_err(|err| err.to_string())?;
+    let branch = format!(
+        "work/{}/{}",
+        safe_segment(atom_id),
+        safe_segment(worker_slot)
+    );
+    let worktree = worktree_root
+        .join(safe_segment(worker_slot))
+        .join(safe_segment(atom_id));
+    create_git_worktree(repo, &branch, &worktree)?;
+    apply_worker_sandbox_submission(dir, &worktree).map_err(|err| err.to_string())?;
+    let changed_paths = validation_paths(&validation);
+    git_add_paths(&worktree, &changed_paths)?;
+    let commit_message = format!("Worker submit {atom_id}");
+    git_commit(&worktree, &commit_message)?;
+    let commit_sha = git_output(&worktree, &["rev-parse", "HEAD"])?;
+
+    let pr = if create_pr {
+        create_worker_pr(dir, &worktree, &branch, atom_id)?
+    } else {
+        serde_json::json!({
+            "pr_creation": "not_requested"
+        })
+    };
+    let report = worker_report_json(dir);
+    let previous = read_records(store)
+        .map_err(|err| err.to_string())?
+        .last()
+        .map(|record| record.record_hash.clone());
+    let record = append_event(
+        store,
+        AppendInput {
+            previous_record_hash: previous.clone(),
+            envelope: worker_submit_event_envelope("WorkerReportSubmitted", previous),
+            payload: serde_json::json!({
+                "atom_id": atom_id,
+                "worker_slot": worker_slot,
+                "worktree": worktree.display().to_string(),
+                "branch": branch,
+                "submission_commit_sha": commit_sha.trim(),
+                "submission_commit_created": true,
+                "files_changed": changed_paths,
+                "validation": validation,
+                "worker_report": report,
+                "worker_halt_confirmation": "[WORKER_HALT]",
+                "pr_creation": pr.get("pr_creation").cloned().unwrap_or_else(|| serde_json::json!("created")),
+                "pr_url": pr.get("pr_url").cloned().unwrap_or(Value::Null),
+                "pr_number": pr.get("pr_number").cloned().unwrap_or(Value::Null),
+                "runtime_truth": false
+            }),
+        },
+    )
+    .map_err(|err| err.to_string())?;
+
+    Ok(serde_json::json!({
+        "decision": "SUBMITTED",
+        "atom_id": atom_id,
+        "worktree": worktree.display().to_string(),
+        "branch": branch,
+        "submission_commit_sha": commit_sha.trim(),
+        "worker_report_record_hash": record.record_hash,
+        "pr": pr,
+        "runtime_truth": false
+    }))
+}
+
+fn has_task_claim(store: &std::path::Path, atom_id: &str) -> Result<bool, String> {
+    Ok(read_records(store)
+        .map_err(|err| err.to_string())?
+        .iter()
+        .any(|record| {
+            record.envelope.get("event_type").and_then(Value::as_str) == Some("TaskClaimed")
+                && record.payload.get("atom_id").and_then(Value::as_str) == Some(atom_id)
+        }))
+}
+
+fn create_git_worktree(
+    repo: &std::path::Path,
+    branch: &str,
+    worktree: &std::path::Path,
+) -> Result<(), String> {
+    if let Some(parent) = worktree.parent() {
+        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    }
+    git_status(
+        repo,
+        &[
+            "worktree",
+            "add",
+            "-b",
+            branch,
+            path_arg(worktree).as_str(),
+            "HEAD",
+        ],
+    )
+}
+
+fn validation_paths(validation: &Value) -> Vec<String> {
+    validation
+        .get("paths")
+        .and_then(Value::as_array)
+        .map(|paths| {
+            paths
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn git_add_paths(worktree: &std::path::Path, paths: &[String]) -> Result<(), String> {
+    if paths.is_empty() {
+        return Err("sandbox submission has no changed paths".to_string());
+    }
+    let mut args = vec!["add", "--"];
+    args.extend(paths.iter().map(String::as_str));
+    git_status(worktree, &args)
+}
+
+fn git_commit(worktree: &std::path::Path, message: &str) -> Result<(), String> {
+    git_status(
+        worktree,
+        &[
+            "-c",
+            "user.name=TuringOS Worker",
+            "-c",
+            "user.email=worker@example.invalid",
+            "commit",
+            "-m",
+            message,
+        ],
+    )
+}
+
+fn git_output(worktree: &std::path::Path, args: &[&str]) -> Result<String, String> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(worktree)
+        .args(args)
+        .output()
+        .map_err(|err| err.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+fn git_status(worktree: &std::path::Path, args: &[&str]) -> Result<(), String> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(worktree)
+        .args(args)
+        .output()
+        .map_err(|err| err.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    Ok(())
+}
+
+fn path_arg(path: &std::path::Path) -> String {
+    path.display().to_string()
+}
+
+fn worker_report_json(dir: &std::path::Path) -> Value {
+    let report_path = dir.join("submit/WorkerReport.json");
+    let text = fs::read_to_string(report_path).unwrap_or_default();
+    serde_json::from_str(&text).unwrap_or_else(|_| serde_json::json!({"raw": text}))
+}
+
+fn create_worker_pr(
+    dir: &std::path::Path,
+    worktree: &std::path::Path,
+    branch: &str,
+    atom_id: &str,
+) -> Result<Value, String> {
+    git_status(worktree, &["push", "-u", "origin", branch])?;
+    let body = dir.join("submit/pr_body.md");
+    fs::write(
+        &body,
+        format!(
+            "WorkerReport\n- atom_id: {atom_id}\n- branch: {branch}\n- worker_halt_confirmation: [WORKER_HALT]\n"
+        ),
+    )
+    .map_err(|err| err.to_string())?;
+    let output = Command::new("gh")
+        .arg("pr")
+        .arg("create")
+        .arg("--base")
+        .arg("main")
+        .arg("--head")
+        .arg(branch)
+        .arg("--title")
+        .arg(format!("[WORKER][{atom_id}] Sandbox submission"))
+        .arg("--body-file")
+        .arg(&body)
+        .current_dir(worktree)
+        .output()
+        .map_err(|err| err.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(serde_json::json!({
+        "pr_creation": "created",
+        "pr_url": url,
+        "pr_number": url.rsplit('/').next().and_then(|value| value.parse::<u64>().ok())
+    }))
 }
 
 fn worker_claim_next(
@@ -485,6 +741,40 @@ fn worker_event_envelope(event_type: &str, previous: Option<String>) -> Value {
     })
 }
 
+fn worker_submit_event_envelope(event_type: &str, previous: Option<String>) -> Value {
+    let observed_at = unix_timestamp();
+    serde_json::json!({
+        "event_id": format!("{event_type}-{observed_at}"),
+        "event_type": event_type,
+        "project_id": "turingosv5",
+        "actor_identity_cid": "sha256:worker-submit-cli",
+        "payload_cid": "sha256:filled-by-append",
+        "previous_event_cid": previous,
+        "observed_at": observed_at,
+        "source": "turingos-dev worker sandbox submit",
+        "subject": {
+            "repo": "gretjia/turingosv5",
+            "branch": null,
+            "pr": null,
+            "files": []
+        },
+        "evidence": {
+            "commands": ["turingos-dev worker sandbox submit"],
+            "artifacts": [],
+            "source_anchors": []
+        },
+        "classification": {
+            "risk_class": 1,
+            "candidate": true,
+            "runtime_truth": false
+        },
+        "integrity": {
+            "payload_hash": "sha256:filled-by-append",
+            "envelope_hash": "sha256:filled-by-append"
+        }
+    })
+}
+
 fn github_open_prs() -> Result<Value, String> {
     let output = Command::new("gh")
         .args([
@@ -559,6 +849,7 @@ fn usage() -> String {
         "  turingos-dev worker sandbox create --task <task.json> --repo <repo> --out <sandbox>",
         "  turingos-dev worker sandbox validate --dir <sandbox>",
         "  turingos-dev worker sandbox apply --dir <sandbox> --worktree <worktree>",
+        "  turingos-dev worker sandbox submit --dir <sandbox> --store <events.jsonl> --repo <repo> --worktree-root <dir> --worker <worker> [--create-pr]",
         "  turingos-dev worker claim next --store <events.jsonl> --repo <repo> --out-root <dir> --worker <worker>",
     ]
     .join("\n")
