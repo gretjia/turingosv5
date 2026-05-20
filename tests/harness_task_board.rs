@@ -428,7 +428,7 @@ fn harness_task_board_publishes_final_taskbook_wave_from_devtape() {
     let expected_v1_tasks = [
         (
             "V5-K0-C0-REALITY-MAP-HARD-GATE-001",
-            "open",
+            "merged",
             ["docs"].as_slice(),
         ),
         (
