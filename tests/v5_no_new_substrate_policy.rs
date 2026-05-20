@@ -21,4 +21,3 @@ fn forbidden_parallel_substrate_files_are_absent() {
         assert_absent(path);
     }
 }
-
