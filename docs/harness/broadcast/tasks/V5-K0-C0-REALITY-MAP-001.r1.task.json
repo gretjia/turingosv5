@@ -1,0 +1,65 @@
+{
+  "schema_version": "task_packet/v0.7",
+  "atom_id": "V5-K0-C0-REALITY-MAP-001",
+  "revision": 1,
+  "title": "Publish K0 Reality Proof as kernel-driven first task",
+  "phase": "V5-K0",
+  "lane": "RealityProof",
+  "class": 1,
+  "priority": "P0",
+  "goal": "Record the Human Architect init intent, publish K0 Reality Proof through DevTape events, and classify current-main substrate claims by machine evidence.",
+  "context": "This task corrects bootstrap-only MetaAI intake into a DevTape-first development loop before any K1 product work begins.",
+  "assigned_mode": "meta_direct",
+  "required_capabilities": ["architecture", "devtape", "docs", "harness", "schema", "tests"],
+  "claim_required": false,
+  "claim_method": "none",
+  "preferred_capabilities": ["audit", "meta-governance"],
+  "allowed_files": [
+    "docs/roadmap/TURINGOS_REALITY_MAP_K0.md",
+    "docs/adr/0001-substrate-path-b-pragmatic-git2.md",
+    "docs/architecture/legacy_anchor_reconciliation.md",
+    "docs/harness/META_AI_MANUAL.md",
+    "docs/contracts/v5_dev_events.md",
+    "docs/harness/broadcast/tasks/V5-K0-C0-REALITY-MAP-001.r1.task.json",
+    "schemas/v5_dev/dev_event_envelope.schema.json",
+    "src/devtool/mod.rs",
+    "tests/v5_dev_event_contract.rs"
+  ],
+  "forbidden_files": [
+    "constitution.md",
+    "genesis_payload.toml",
+    "docs/harness/broadcast/TASK_BOARD.json",
+    "src/runtime/**",
+    "src/state/**",
+    "src/cas.rs",
+    "src/hash.rs",
+    "src/versioned_state.rs"
+  ],
+  "required_behavior": [
+    "Human intent is represented by a DevEvent before task publication",
+    "K0 task publication uses DevTaskCreated followed by TaskBroadcasted",
+    "Derived board is generated from DevTape before further dispatch decisions",
+    "Reality claims without code and test anchors are downgraded to assumptions",
+    "No product/runtime truth is read from board, harness, V4 paths, sessions, caches, dashboards, or temporary preview paths"
+  ],
+  "acceptance_tests": [
+    "cargo run --bin turingos-dev -- board derive --store .turingos_system/devtape/turingosv5/events.jsonl --out .turingos_system/devtape/turingosv5/derived_board.json",
+    "cargo run --bin turingos-dev -- audit --store .turingos_system/devtape/turingosv5/events.jsonl --board .turingos_system/devtape/turingosv5/derived_board.json",
+    "cargo test --test v5_dev_event_contract",
+    "cargo test --test v5_devtape_kernel_mvp",
+    "cargo test --workspace",
+    "git diff --check"
+  ],
+  "visible_gates": ["devtape_boot", "reality_map", "workspace_tests"],
+  "hidden_gates_policy": "meta_only",
+  "worker_halt_required": false,
+  "max_repair_attempts": 3,
+  "conflict_policy": "supersede_on_dirty",
+  "non_goals": [
+    "Do not implement K1 TISR evidence rails",
+    "Do not overwrite the checked-in task board until the board contract is reconciled",
+    "Do not introduce a new canonical CAS/hash/WAL/HEAD_t substrate",
+    "Do not edit Class 4 files"
+  ],
+  "rollback_plan": "Remove the K0 task packet and DevEvent enum addition, then delete ignored local DevTape evidence if the Human Architect rejects this bootstrap correction."
+}

@@ -105,6 +105,12 @@ gh pr list --state open --json number,title,headRefName,isDraft,createdAt,url,me
 
 This is the open PR claims scan.
 
+If `turingos-dev` is not installed on `PATH`, use the cargo target form:
+
+```bash
+cargo run --bin turingos-dev -- <args>
+```
+
 Claim facts come from draft PRs whose title follows:
 
 ```text
@@ -128,12 +134,14 @@ continuation.
 
 To publish a task in kernel-driven mode:
 
-1. create a `DevTaskCreated` payload;
-2. append it with `turingos-dev event append`;
-3. append `TaskBroadcasted` for the same `atom_id`;
-4. derive `TASK_BOARD.json` from DevTape;
-5. audit the derived board;
-6. run tests before PR.
+1. append `HumanIntentReceived` for the human instruction that creates or
+   reconciles the work;
+2. create a `DevTaskCreated` payload;
+3. append it with `turingos-dev event append`;
+4. append `TaskBroadcasted` for the same `atom_id`;
+5. derive the board from DevTape;
+6. audit the derived board;
+7. run tests before PR.
 
 The board row must be explainable from `source_event_cids`. A task that exists
 only as a hand edit to `TASK_BOARD.json` is not accepted development state.

@@ -72,6 +72,7 @@ They do not authorize MetaAI, WorkerAI, AuditorAI, or VetoAI duties.
 
 The v0.8 MVP event family is:
 
+- HumanIntentReceived
 - DevTaskCreated
 - TaskBroadcasted
 - TaskClaimed
@@ -102,7 +103,8 @@ projection; it is not a lock service or runtime truth.
 Minimum event flow:
 
 ```text
-DevTaskCreated
+HumanIntentReceived
+-> DevTaskCreated
 -> TaskBroadcasted
 -> TaskClaimed
 -> WorkerReportSubmitted
@@ -111,10 +113,12 @@ DevTaskCreated
 -> MergeDecisionRecorded
 ```
 
-`TaskBroadcasted` makes a task visible on the derived board. `TaskClaimed`
-records the draft PR claim. `MergeDecisionRecorded(PROCEED)` is necessary before
-MetaAI may treat a PR as merge-ready, but GitHub branch protection, CI, review,
-conversation resolution, and Class 4 ratification remain mandatory.
+`HumanIntentReceived` records the human instruction that caused MetaAI to create
+or reconcile tasks. `TaskBroadcasted` makes a task visible on the derived board.
+`TaskClaimed` records the draft PR claim. `MergeDecisionRecorded(PROCEED)` is
+necessary before MetaAI may treat a PR as merge-ready, but GitHub branch
+protection, CI, review, conversation resolution, and Class 4 ratification remain
+mandatory.
 
 ## Provider Neutrality
 
