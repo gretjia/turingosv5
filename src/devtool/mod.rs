@@ -1083,7 +1083,7 @@ pub fn meta_reconcile_report(board: &Value, prs: &Value) -> DevToolResult<Value>
                 "hold_failed_ci"
             } else if status == Some("pr_open")
                 && !needs_report
-                && pr_string(pr, "mergeStateStatus") != "CLEAN"
+                && pr_string(pr, "mergeStateStatus") == "BEHIND"
             {
                 "hold_until_branch_updated"
             } else if status == Some("pr_open") && !needs_report {
@@ -1277,14 +1277,8 @@ fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Val
 }
 
 fn claim_atom(pr: &Value) -> Option<String> {
-    let title = pr.get("title")?.as_str()?;
-    let rest = title.strip_prefix("[CLAIM][")?;
-    let (atom, _) = rest.split_once("]")?;
-    if atom.is_empty() {
-        None
-    } else {
-        Some(atom.to_string())
-    }
+    let title = pr.get("title").and_then(Value::as_str).unwrap_or("");
+    title_atom(title).or_else(|| pr.get("body").and_then(Value::as_str).and_then(body_atom))
 }
 
 fn has_worker_report(pr: &Value) -> bool {
@@ -1303,6 +1297,31 @@ fn has_failed_check(pr: &Value) -> bool {
                 )
             })
         })
+}
+
+fn title_atom(title: &str) -> Option<String> {
+    for prefix in ["[CLAIM][", "[WORKER]["] {
+        let Some(rest) = title.strip_prefix(prefix) else {
+            continue;
+        };
+        let (atom, _) = rest.split_once("]")?;
+        if !atom.is_empty() {
+            return Some(atom.to_string());
+        }
+    }
+    None
+}
+
+fn body_atom(body: &str) -> Option<String> {
+    body.lines().find_map(|line| {
+        let trimmed = line.trim().trim_start_matches('-').trim();
+        let value = trimmed.strip_prefix("atom_id:")?.trim();
+        if value.is_empty() {
+            None
+        } else {
+            Some(value.trim_matches('"').to_string())
+        }
+    })
 }
 
 fn pr_action(pr: &Value, atom_id: Value, action: &str, needs_worker_report: bool) -> Value {

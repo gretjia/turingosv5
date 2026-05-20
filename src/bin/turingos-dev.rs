@@ -362,7 +362,22 @@ fn worker_sandbox_submit(
     let commit_message = format!("Worker submit {atom_id}");
     git_commit(&worktree, &commit_message)?;
     let commit_sha = git_output(&worktree, &["rev-parse", "HEAD"])?;
-    let local_gates = run_local_gates(&manifest, &worktree)?;
+    let gate_report_path = dir.join("submit/local_gates_report.json");
+    let local_gates = match run_local_gates(&manifest, &worktree, &gate_report_path) {
+        Ok(value) => value,
+        Err(error) => {
+            append_sandbox_repair_event(
+                store,
+                atom_id,
+                worker_slot,
+                &branch,
+                &worktree,
+                &gate_report_path,
+                &error,
+            )?;
+            return Err(error);
+        }
+    };
 
     let pr = if create_pr {
         create_worker_pr(dir, &worktree, &branch, atom_id)?
@@ -433,6 +448,7 @@ fn create_git_worktree(
     if let Some(parent) = worktree.parent() {
         fs::create_dir_all(parent).map_err(|err| err.to_string())?;
     }
+    reset_local_worktree_branch(repo, branch, worktree)?;
     git_status(
         repo,
         &[
@@ -444,6 +460,24 @@ fn create_git_worktree(
             "HEAD",
         ],
     )
+}
+
+fn reset_local_worktree_branch(
+    repo: &std::path::Path,
+    branch: &str,
+    worktree: &std::path::Path,
+) -> Result<(), String> {
+    if worktree.exists() {
+        let _ = git_status(
+            repo,
+            &["worktree", "remove", "--force", path_arg(worktree).as_str()],
+        );
+        if worktree.exists() {
+            fs::remove_dir_all(worktree).map_err(|err| err.to_string())?;
+        }
+    }
+    let _ = git_status(repo, &["branch", "-D", branch]);
+    Ok(())
 }
 
 fn validation_paths(validation: &Value) -> Vec<String> {
@@ -460,7 +494,11 @@ fn validation_paths(validation: &Value) -> Vec<String> {
         .unwrap_or_default()
 }
 
-fn run_local_gates(manifest: &Value, worktree: &std::path::Path) -> Result<Value, String> {
+fn run_local_gates(
+    manifest: &Value,
+    worktree: &std::path::Path,
+    report_path: &std::path::Path,
+) -> Result<Value, String> {
     let tests = manifest
         .get("acceptance_tests")
         .and_then(Value::as_array)
@@ -493,12 +531,61 @@ fn run_local_gates(manifest: &Value, worktree: &std::path::Path) -> Result<Value
             "stdout": String::from_utf8_lossy(&output.stdout).trim(),
             "stderr": String::from_utf8_lossy(&output.stderr).trim()
         });
+        results.push(result.clone());
+        write_gate_report(report_path, &Value::Array(results.clone()))?;
         if !output.status.success() {
-            return Err(format!("local gate failed: {}", result["cmd"]));
+            return Err(format!(
+                "local gate failed: {}; report: {}",
+                result["cmd"],
+                report_path.display()
+            ));
         }
-        results.push(result);
     }
     Ok(Value::Array(results))
+}
+
+fn write_gate_report(path: &std::path::Path, value: &Value) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    }
+    fs::write(
+        path,
+        serde_json::to_vec_pretty(value).map_err(|err| err.to_string())?,
+    )
+    .map_err(|err| err.to_string())
+}
+
+fn append_sandbox_repair_event(
+    store: &std::path::Path,
+    atom_id: &str,
+    worker_slot: &str,
+    branch: &str,
+    worktree: &std::path::Path,
+    gate_report_path: &std::path::Path,
+    reason: &str,
+) -> Result<(), String> {
+    let previous = read_records(store)
+        .map_err(|err| err.to_string())?
+        .last()
+        .map(|record| record.record_hash.clone());
+    append_event(
+        store,
+        AppendInput {
+            previous_record_hash: previous.clone(),
+            envelope: worker_submit_event_envelope("RepairTaskCreated", previous),
+            payload: serde_json::json!({
+                "atom_id": atom_id,
+                "worker_slot": worker_slot,
+                "branch": branch,
+                "worktree": worktree.display().to_string(),
+                "reason": reason,
+                "local_gate_report": gate_report_path.display().to_string(),
+                "runtime_truth": false
+            }),
+        },
+    )
+    .map(|_| ())
+    .map_err(|err| err.to_string())
 }
 
 fn git_add_paths(worktree: &std::path::Path, paths: &[String]) -> Result<(), String> {
@@ -572,7 +659,7 @@ fn create_worker_pr(
     fs::write(
         &body,
         format!(
-            "WorkerReport\n- atom_id: {atom_id}\n- branch: {branch}\n- worker_halt_confirmation: [WORKER_HALT]\n"
+            "ClaimRecord\n- atom_id: {atom_id}\n- claim_method: sandbox\n- branch: {branch}\n\nWorkerReport\n- atom_id: {atom_id}\n- branch: {branch}\n- worker_halt_confirmation: [WORKER_HALT]\n"
         ),
     )
     .map_err(|err| err.to_string())?;
