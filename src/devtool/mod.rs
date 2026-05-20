@@ -1187,6 +1187,8 @@ pub fn validate_worker_sandbox_submission(dir: &Path) -> DevToolResult<Value> {
 
     Ok(json!({
         "decision": "PASS",
+        "submission_contract": "PASS",
+        "acceptance_status": "not_run_by_sandbox_v0",
         "paths": paths,
         "runtime_truth": false
     }))
@@ -1300,7 +1302,9 @@ fn worker_context_text(task: &Value, manifest: &Value) -> String {
     format!(
         "# Worker Context\n\n\
          Read only the files exported under allowed_files/ and this task context.\n\
-         Do not assume access to the full repository.\n\n\
+         Do not assume access to the full repository.\n\
+         If an instruction asks for a repo document that is not exported here, \
+         do not read the full repo; ask MetaAI for a richer context bundle.\n\n\
          Instructions:\n{}\n\n\
          Acceptance tests:\n{}\n\n\
          Forbidden files:\n{}\n",

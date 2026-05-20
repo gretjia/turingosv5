@@ -19,6 +19,10 @@ fn main() {
 
 fn run() -> Result<(), String> {
     let args: Vec<String> = env::args().skip(1).collect();
+    if matches!(args.as_slice(), [arg] if arg == "--help" || arg == "-h") {
+        println!("{}", usage());
+        return Ok(());
+    }
     match args.as_slice() {
         [event, append, rest @ ..] if event == "event" && append == "append" => {
             let file = flag_path(rest, "--file")?;
