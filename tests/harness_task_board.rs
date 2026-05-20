@@ -675,6 +675,7 @@ fn remote_worker_prompt_has_workspace_gate_sparse_profile() {
         "/README.md",
         "/AGENTS.md",
         "/AGENT_ENTRY.md",
+        "/HARNESS.md",
         "/CHARTER.md",
         "/CODEX.md",
         "/CLAUDE.md",
