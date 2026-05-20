@@ -1,10 +1,11 @@
+use serde_json::Value;
 use std::env;
 use std::io::{self, IsTerminal, Read, Write};
 use std::path::PathBuf;
 use std::process::{self, Command};
 use turingosv5::devtool::{
-    console_frame, console_text, default_provider_profiles_path,
-    meta_ai_welcome_frame_with_selection, write_deepseek_fallback_config,
+    console_frame, console_text, default_provider_profiles_path, derive_board,
+    meta_ai_welcome_frame_with_selection, meta_reconcile_report, write_deepseek_fallback_config,
     write_deepseek_secret_from_env_file,
 };
 
@@ -154,6 +155,10 @@ fn run_tui(store: &std::path::Path, meta_config: &std::path::Path) -> Result<(),
                 status = "DeepSeek fallback configured via DEEPSEEK_API_KEY; key value not stored."
                     .to_string();
             }
+            Key::Char('m') => {
+                screen = Screen::Console;
+                status = meta_reconcile_status(store);
+            }
             Key::Char('h') => show_help = !show_help,
             Key::Char('r') | Key::Enter => status.clear(),
             Key::Char(other) => {
@@ -168,6 +173,56 @@ fn run_tui(store: &std::path::Path, meta_config: &std::path::Path) -> Result<(),
 fn openai_oauth_status() -> String {
     "OpenAI OAuth: use Codex app-server account/login/start; token remains outside TuringOS."
         .to_string()
+}
+
+fn meta_reconcile_status(store: &std::path::Path) -> String {
+    match meta_reconcile_once(store) {
+        Ok(report) => {
+            let scanned = report
+                .get("scanned_prs")
+                .and_then(Value::as_u64)
+                .unwrap_or(0);
+            let action_count = report
+                .get("actions")
+                .and_then(Value::as_array)
+                .map_or(0, Vec::len);
+            let first_action = report
+                .get("actions")
+                .and_then(Value::as_array)
+                .and_then(|actions| actions.first())
+                .and_then(|action| action.get("action"))
+                .and_then(Value::as_str)
+                .unwrap_or("none");
+            format!(
+                "Meta reconcile dry-run: scanned {scanned} PR(s), {action_count} action(s), first action: {first_action}."
+            )
+        }
+        Err(error) => format!("Meta reconcile failed: {error}"),
+    }
+}
+
+fn meta_reconcile_once(store: &std::path::Path) -> Result<Value, String> {
+    let board = derive_board(store).map_err(|err| err.to_string())?;
+    let prs = github_open_prs()?;
+    meta_reconcile_report(&board, &prs).map_err(|err| err.to_string())
+}
+
+fn github_open_prs() -> Result<Value, String> {
+    let output = Command::new("gh")
+        .args([
+            "pr",
+            "list",
+            "--state",
+            "open",
+            "--json",
+            "number,title,headRefName,isDraft,createdAt,url,body,mergeStateStatus,statusCheckRollup",
+        ])
+        .output()
+        .map_err(|err| err.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    serde_json::from_slice(&output.stdout).map_err(|err| err.to_string())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
