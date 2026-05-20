@@ -22,5 +22,3 @@ This document captures the gaps identified during the K0 reality proof phase. It
 ## Hard Gate Verdict
 
 **FAIL (conditional)**. Do not proceed to K1 as if the product substrate exists. The "ghost" status of git2 must be resolved in `C1` before building product features on top of it.
-
-[WORKER_HALT]
