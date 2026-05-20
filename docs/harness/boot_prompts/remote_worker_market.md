@@ -11,34 +11,49 @@ https://github.com/gretjia/turingosv5.git
 Your job is to inspect the public task board, self-select one eligible task,
 claim it, complete it, open or update the PR, and stop.
 
-## Market Phase
+## API-first Market Phase
 
-Create a fresh working area:
+Create a fresh working area for downloaded market files. Do not clone the
+repository yet.
 
 ```bash
 export REPO_URL="https://github.com/gretjia/turingosv5.git"
 export REPO_NAME="gretjia/turingosv5"
+export REF="${REF:-main}"
 export WORKER_SLOT="${WORKER_SLOT:-worker-remote-$(date +%s)}"
 export ROOT="$HOME/turingos-worker-sessions/$WORKER_SLOT"
+export MARKET="$ROOT/market"
 
-mkdir -p "$ROOT"
+mkdir -p "$MARKET"
 cd "$ROOT"
-git clone --filter=blob:none --no-checkout "$REPO_URL" repo
-cd repo
 ```
 
-Read only the public market surface first:
+Public repositories can be inspected through GitHub raw files; private repositories require authenticated `gh`
+with repository contents read access;
+the same API commands then work without exposing tokens in the task files.
+
+Fetch only the public market surface first:
 
 ```bash
-git sparse-checkout init --no-cone
-git sparse-checkout set --no-cone \
-  /AGENTS.md \
-  /AGENT_ENTRY.md \
-  /docs/harness/roles/WORKER_ENTRY.md \
-  /docs/agent_skills/KARPATHY_SIMPLE_CODE.md \
-  /docs/harness/broadcast/TASK_BOARD.json \
-  '/docs/harness/broadcast/tasks/*.json'
-git checkout main
+fetch_market_file() {
+  path="$1"
+  out="$MARKET/$path"
+  mkdir -p "$(dirname "$out")"
+  gh api \
+    -H "Accept: application/vnd.github.raw+json" \
+    "repos/$REPO_NAME/contents/$path?ref=$REF" > "$out"
+}
+
+fetch_market_file AGENTS.md
+fetch_market_file AGENT_ENTRY.md
+fetch_market_file docs/harness/roles/WORKER_ENTRY.md
+fetch_market_file docs/agent_skills/KARPATHY_SIMPLE_CODE.md
+fetch_market_file docs/harness/broadcast/TASK_BOARD.json
+
+gh api "repos/$REPO_NAME/git/trees/$REF?recursive=1" \
+  --jq '.tree[].path' \
+  | grep '^docs/harness/broadcast/tasks/.*\.json$' \
+  | while read -r task_path; do fetch_market_file "$task_path"; done
 ```
 
 Choose one task from the Task Board where:
@@ -70,14 +85,32 @@ NO_ELIGIBLE_TASK
 [WORKER_HALT]
 ```
 
-## Claim Phase
+## Checkout And Claim Phase
 
-After choosing:
+Only after choosing one atom, create a shallow blobless sparse checkout for the
+selected task and claim branch:
 
 ```bash
 export ATOM_ID="<selected atom_id>"
 export TASK_PACKET="<selected task_packet path>"
 export BRANCH="work/$ATOM_ID/$WORKER_SLOT"
+
+git clone \
+  --filter=blob:none \
+  --sparse \
+  --depth=1 \
+  --single-branch \
+  --branch "$REF" \
+  "$REPO_URL" repo
+cd repo
+
+git sparse-checkout set --no-cone \
+  /AGENTS.md \
+  /AGENT_ENTRY.md \
+  /docs/harness/roles/WORKER_ENTRY.md \
+  /docs/agent_skills/KARPATHY_SIMPLE_CODE.md \
+  /docs/harness/broadcast/TASK_BOARD.json \
+  "$TASK_PACKET"
 
 git switch -c "$BRANCH"
 git commit --allow-empty -m "Claim $ATOM_ID"
