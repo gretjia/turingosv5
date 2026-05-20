@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turingos.v5.artifact_bundle.v0.1",
+  "title": "ArtifactBundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_bundle_cid",
+    "spec_capsule_cid",
+    "generation_attempt_cid",
+    "files",
+    "entrypoint"
+  ],
+  "properties": {
+    "artifact_bundle_cid": {
+      "type": "string",
+      "minLength": 8,
+      "description": "CID of this ArtifactBundle record."
+    },
+    "spec_capsule_cid": {
+      "type": "string",
+      "minLength": 8,
+      "description": "CID of the specification capsule that caused generation."
+    },
+    "generation_attempt_cid": {
+      "type": "string",
+      "minLength": 8,
+      "description": "CID of the generation attempt evidence."
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "content_cid",
+          "media_type",
+          "role"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_cid": {
+            "type": "string",
+            "minLength": 8
+          },
+          "media_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "entrypoint",
+              "source",
+              "asset",
+              "manifest",
+              "test",
+              "other"
+            ]
+          }
+        }
+      }
+    },
+    "entrypoint": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Bundle-relative path to the first preview or build target."
+    }
+  }
+}
