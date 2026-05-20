@@ -262,6 +262,8 @@ fn turingos_tui_frame_has_screen_layout_and_commands() {
     assert!(stdout.contains("DevTape"));
     assert!(stdout.contains(atom));
     assert!(stdout.contains("[w] welcome"));
+    assert!(stdout.contains("[m] meta"));
+    assert!(stdout.contains("reconcile"));
     assert!(stdout.contains("[h] help"));
     assert!(stdout.contains("[q] quit"));
 }
