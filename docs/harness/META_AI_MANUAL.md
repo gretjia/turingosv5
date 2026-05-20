@@ -3,6 +3,11 @@
 Purpose: give a newly opened MetaAI session one operational map for TuringOS V5.
 This manual is not a source of truth. It tells MetaAI how to find truth.
 
+Outer-session supervisors must also read
+`docs/harness/META_META_AI_BOUNDARY.md`. The outer assistant is
+Meta-MetaAI/System Supervisor, not the in-system TuringOS MetaAI. Any temporary
+replacement of MetaAI duties must be labeled `Manual Meta-MetaAI Override`.
+
 ## Core Illusion
 
 TuringOS V5 development is an append-only list of DevEvents replayed into
@@ -64,9 +69,10 @@ Read in this order:
 4. `docs/agent_skills/KARPATHY_ARCHITECT.md`
 5. `docs/harness/META_HARNESS.md`
 6. `docs/harness/META_AI_MANUAL.md`
-7. `docs/harness/TASK_BROADCAST_POLICY.md`
-8. `docs/v5_dev/CORE_DEV_FLOW.md`
-9. `docs/harness/broadcast/TASK_BOARD.json`
+7. `docs/harness/META_META_AI_BOUNDARY.md`
+8. `docs/harness/TASK_BROADCAST_POLICY.md`
+9. `docs/v5_dev/CORE_DEV_FLOW.md`
+10. `docs/harness/broadcast/TASK_BOARD.json`
 
 If the worktree is dirty, first classify the dirt:
 
@@ -148,6 +154,22 @@ only as a hand edit to `TASK_BOARD.json` is not accepted development state.
 
 ## Worker / PR Reconciliation
 
+The minimal autonomous entrypoint is:
+
+```bash
+cargo run --bin turingos-dev -- meta run \
+  --store .turingos_system/devtape/turingosv5/events.jsonl \
+  --board-out docs/harness/broadcast/TASK_BOARD.json \
+  --iterations 1 \
+  --interval-ms 0 \
+  --meta-adapter deepseek
+```
+
+Use `--iterations <n>` with a positive integer for a controlled polling run.
+This is not a daemon yet; it is a repeatable one-process reconcile loop. If the
+DeepSeek adapter fails, the provider error is recorded as candidate evidence and
+the deterministic reconcile loop still runs.
+
 When a WorkerAI opens a draft claim PR, MetaAI records:
 
 ```text
@@ -183,6 +205,13 @@ Rules:
 - WorkerReport without `[WORKER_HALT]` is incomplete.
 - Dirty PR merge state becomes `SUPERSEDE`; do not rebase or manually resolve
   inside the same candidate.
+- Ready PRs can produce deterministic gate evidence:
+  `AuditVerdictSubmitted`, `VetoVerdictSubmitted`, and
+  `MergeDecisionRecorded`.
+- Deterministic audit only checks mechanical PR facts available to MetaAI:
+  changed files, allowed/forbidden files, CI state, review/branch state, and
+  WorkerReport presence. It does not replace human Class 4 ratification or
+  product-quality review.
 
 ## Merge Check
 
@@ -197,6 +226,9 @@ gh pr view <number> --json mergeStateStatus,reviewDecision,statusCheckRollup
 `MergeDecisionRecorded(PROCEED)` is necessary but not sufficient. GitHub branch
 protection, CI, review, conversation resolution, forbidden-file checks,
 independent audit, Veto when required, and Class 4 ratification still apply.
+
+`MergeDecisionRecorded(HOLD)` is a valid accepted observation. It means the PR
+has enough evidence to explain why it cannot merge yet.
 
 Never merge when:
 

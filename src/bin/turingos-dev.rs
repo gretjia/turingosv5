@@ -1,13 +1,17 @@
 use serde_json::Value;
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::{self, Command};
+use std::thread;
+use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use turingosv5::devtool::{
     append_event, apply_worker_sandbox_submission, audit_board_drift, console_text,
-    create_worker_sandbox, derive_board, merge_check, meta_reconcile_report, read_records,
-    validate_worker_sandbox_submission, AppendInput, MergeGateDecision,
+    create_worker_sandbox, default_provider_profiles_path, derive_board, merge_check,
+    meta_reconcile_report, read_meta_ai_config, read_records, validate_worker_sandbox_submission,
+    AppendInput, MergeGateDecision,
 };
 
 fn main() {
@@ -82,6 +86,37 @@ fn run() -> Result<(), String> {
             let store = flag_path(rest, "--store")?;
             let board_out = flag_path(rest, "--board-out")?;
             let result = loop_once(&store, &board_out, optional_flag_path(rest, "--prs-file"))?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&result).map_err(|err| err.to_string())?
+            );
+            Ok(())
+        }
+        [meta, run, rest @ ..] if meta == "meta" && run == "run" => {
+            let store = flag_path(rest, "--store")?;
+            let board_out = flag_path(rest, "--board-out")?;
+            let iterations = optional_flag_value(rest, "--iterations")
+                .unwrap_or_else(|| "1".to_string())
+                .parse::<usize>()
+                .map_err(|err| format!("--iterations must be an integer: {err}"))?;
+            if iterations == 0 {
+                return Err("--iterations must be greater than 0".to_string());
+            }
+            let interval_ms = optional_flag_value(rest, "--interval-ms")
+                .unwrap_or_else(|| "5000".to_string())
+                .parse::<u64>()
+                .map_err(|err| format!("--interval-ms must be an integer: {err}"))?;
+            let result = meta_run(
+                &store,
+                &board_out,
+                optional_flag_path(rest, "--prs-file"),
+                optional_flag_path(rest, "--meta-config")
+                    .unwrap_or_else(default_provider_profiles_path),
+                optional_flag_path(rest, "--model-response-file"),
+                optional_flag_value(rest, "--meta-adapter").unwrap_or_else(|| "none".to_string()),
+                iterations,
+                interval_ms,
+            )?;
             println!(
                 "{}",
                 serde_json::to_string_pretty(&result).map_err(|err| err.to_string())?
@@ -212,6 +247,284 @@ fn run() -> Result<(), String> {
     }
 }
 
+fn meta_run(
+    store: &std::path::Path,
+    board_out: &std::path::Path,
+    prs_file: Option<PathBuf>,
+    meta_config: PathBuf,
+    model_response_file: Option<PathBuf>,
+    meta_adapter: String,
+    iterations: usize,
+    interval_ms: u64,
+) -> Result<Value, String> {
+    let mut iteration_reports = Vec::new();
+    for index in 0..iterations {
+        let board = derive_board(store).map_err(|err| err.to_string())?;
+        if let Some(parent) = board_out.parent() {
+            fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+        }
+        fs::write(
+            board_out,
+            serde_json::to_vec_pretty(&board).map_err(|err| err.to_string())?,
+        )
+        .map_err(|err| err.to_string())?;
+        audit_board_drift(store, &board).map_err(|err| err.to_string())?;
+
+        let prs = if let Some(path) = prs_file.as_ref() {
+            serde_json::from_slice(&fs::read(path).map_err(|err| err.to_string())?)
+                .map_err(|err| err.to_string())?
+        } else {
+            github_reconcile_prs()?
+        };
+        let report = meta_reconcile_report(&board, &prs).map_err(|err| err.to_string())?;
+        let model_observation = meta_model_observation(
+            &meta_adapter,
+            &meta_config,
+            model_response_file.as_ref(),
+            &board,
+            &report,
+        )?;
+        let reconcile = append_meta_reconcile_with_trigger_and_model(
+            store,
+            report.clone(),
+            "meta_run",
+            model_observation,
+        )?;
+        let followups = append_reconcile_followups(store, &report)?;
+        let final_board = derive_board(store).map_err(|err| err.to_string())?;
+        fs::write(
+            board_out,
+            serde_json::to_vec_pretty(&final_board).map_err(|err| err.to_string())?,
+        )
+        .map_err(|err| err.to_string())?;
+        audit_board_drift(store, &final_board).map_err(|err| err.to_string())?;
+        iteration_reports.push(serde_json::json!({
+            "iteration": index + 1,
+            "meta_reconcile_record": reconcile.record_hash,
+            "followup_records": followups,
+            "report": report
+        }));
+        if index + 1 < iterations && interval_ms > 0 {
+            thread::sleep(Duration::from_millis(interval_ms));
+        }
+    }
+
+    Ok(serde_json::json!({
+        "mode": "meta_run",
+        "iterations_completed": iterations,
+        "interval_ms": interval_ms,
+        "model_adapter": meta_adapter,
+        "board_out": board_out.display().to_string(),
+        "merge_executed": false,
+        "iterations": iteration_reports
+    }))
+}
+
+fn meta_model_observation(
+    adapter: &str,
+    meta_config: &std::path::Path,
+    model_response_file: Option<&PathBuf>,
+    board: &Value,
+    report: &Value,
+) -> Result<Option<Value>, String> {
+    if adapter == "none" {
+        return Ok(None);
+    }
+    if adapter != "deepseek" {
+        return Err(format!("unsupported --meta-adapter {adapter}"));
+    }
+    let config = read_meta_ai_config(meta_config).map_err(|err| err.to_string())?;
+    let model = config
+        .meta_ai_model
+        .or(config.deepseek_reasoning_model)
+        .unwrap_or_else(|| "deepseek-v4-pro".to_string());
+    let (status, content) = if let Some(path) = model_response_file {
+        (
+            "ok",
+            fs::read_to_string(path).map_err(|err| err.to_string())?,
+        )
+    } else {
+        match call_deepseek_meta_ai(meta_config, &model, board, report) {
+            Ok(content) => ("ok", content),
+            Err(error) => ("error", sanitize_provider_error(&error)),
+        }
+    };
+    Ok(Some(serde_json::json!({
+        "adapter": "deepseek",
+        "model": model,
+        "status": status,
+        "candidate": true,
+        "runtime_truth": false,
+        "source": if model_response_file.is_some() { "model_response_file" } else { "deepseek_chat_completions" },
+        "content": content
+    })))
+}
+
+fn call_deepseek_meta_ai(
+    meta_config: &std::path::Path,
+    model: &str,
+    board: &Value,
+    report: &Value,
+) -> Result<String, String> {
+    let config = read_meta_ai_config(meta_config).map_err(|err| err.to_string())?;
+    let base_url = config
+        .deepseek_base_url
+        .unwrap_or_else(|| "https://api.deepseek.com".to_string());
+    let api_key_env = config
+        .deepseek_api_key_env
+        .unwrap_or_else(|| "DEEPSEEK_API_KEY".to_string());
+    let api_key = env::var(&api_key_env)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .or_else(|| {
+            config
+                .secrets_env_path
+                .as_deref()
+                .and_then(|path| read_secret_env_value(&PathBuf::from(path), &api_key_env).ok())
+        })
+        .ok_or_else(|| {
+            format!("{api_key_env} is not available in env or configured secrets file")
+        })?;
+
+    let payload = serde_json::json!({
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are the in-system TuringOS MetaAI. Return concise JSON only. Your output is Candidate advice, not accepted state. Do not include chain-of-thought or secrets."
+            },
+            {
+                "role": "user",
+                "content": serde_json::to_string(&serde_json::json!({
+                    "task": "Observe the current DevTape-derived board and reconcile report. Recommend the next safe system action. Do not claim merge authority.",
+                    "board_summary": board_summary(board),
+                    "reconcile_report": report
+                })).map_err(|err| err.to_string())?
+            }
+        ],
+        "thinking": {"type": "enabled"},
+        "reasoning_effort": "high",
+        "stream": false
+    });
+
+    let body_path = std::env::temp_dir().join(format!(
+        "turingos-deepseek-meta-{}-{}.json",
+        std::process::id(),
+        unix_timestamp().replace(':', "_")
+    ));
+    fs::write(
+        &body_path,
+        serde_json::to_vec(&payload).map_err(|err| err.to_string())?,
+    )
+    .map_err(|err| err.to_string())?;
+    let config_path = std::env::temp_dir().join(format!(
+        "deepseek-curl-config-{}-{}.conf",
+        std::process::id(),
+        unix_timestamp().replace(':', "_")
+    ));
+    let curl_config = format!(
+        "url = \"{}/chat/completions\"\nrequest = \"POST\"\nheader = \"Content-Type: application/json\"\nheader = \"Authorization: Bearer {}\"\ndata-binary = \"@{}\"\nfail\nsilent\nshow-error\n",
+        base_url.trim_end_matches('/'),
+        api_key,
+        body_path.display()
+    );
+    write_private_file(&config_path, curl_config.as_bytes())?;
+    let output = Command::new("curl")
+        .arg("--config")
+        .arg(&config_path)
+        .arg("--max-time")
+        .arg("45")
+        .output()
+        .map_err(|err| err.to_string());
+    let _ = fs::remove_file(&config_path);
+    let _ = fs::remove_file(&body_path);
+    let output = output?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    let response: Value = serde_json::from_slice(&output.stdout).map_err(|err| err.to_string())?;
+    response
+        .pointer("/choices/0/message/content")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .ok_or_else(|| "DeepSeek response missing choices[0].message.content".to_string())
+}
+
+fn board_summary(board: &Value) -> Value {
+    let tasks = board
+        .get("tasks")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .map(|task| {
+                    serde_json::json!({
+                        "atom_id": task.get("atom_id").cloned().unwrap_or(Value::Null),
+                        "status": task.get("status").cloned().unwrap_or(Value::Null),
+                        "pr_number": task.get("pr_number").cloned().unwrap_or(Value::Null),
+                        "priority": task.get("priority").cloned().unwrap_or(Value::Null)
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    serde_json::json!({
+        "source": board.get("source").cloned().unwrap_or(Value::Null),
+        "task_count": tasks.len(),
+        "tasks": tasks
+    })
+}
+
+fn read_secret_env_value(path: &std::path::Path, key_name: &str) -> Result<String, String> {
+    let text = fs::read_to_string(path).map_err(|err| err.to_string())?;
+    text.lines()
+        .filter_map(|line| line.split_once('='))
+        .find(|(key, _)| key.trim() == key_name)
+        .map(|(_, value)| {
+            value
+                .trim()
+                .trim_matches('"')
+                .trim_matches('\'')
+                .to_string()
+        })
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| format!("{key_name} not found in {}", path.display()))
+}
+
+fn sanitize_provider_error(error: &str) -> String {
+    let mut cleaned = error.to_string();
+    if let Some(index) = cleaned.find("sk-") {
+        let end = cleaned[index..]
+            .find(char::is_whitespace)
+            .map(|offset| index + offset)
+            .unwrap_or(cleaned.len());
+        cleaned.replace_range(index..end, "sk-<redacted>");
+    }
+    cleaned
+}
+
+#[cfg(unix)]
+fn write_private_file(path: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
+    use std::os::unix::fs::OpenOptionsExt;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(path)
+        .map_err(|err| err.to_string())?;
+    file.write_all(bytes).map_err(|err| err.to_string())
+}
+
+#[cfg(not(unix))]
+fn write_private_file(path: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .map_err(|err| err.to_string())?;
+    file.write_all(bytes).map_err(|err| err.to_string())
+}
+
 fn loop_once(
     store: &std::path::Path,
     board_out: &std::path::Path,
@@ -266,70 +579,183 @@ fn append_meta_reconcile_with_trigger(
     report: Value,
     trigger: &str,
 ) -> Result<turingosv5::devtool::DevTapeRecord, String> {
+    append_meta_reconcile_with_trigger_and_model(store, report, trigger, None)
+}
+
+fn append_meta_reconcile_with_trigger_and_model(
+    store: &std::path::Path,
+    report: Value,
+    trigger: &str,
+    model_observation: Option<Value>,
+) -> Result<turingosv5::devtool::DevTapeRecord, String> {
     let previous = read_records(store)
         .map_err(|err| err.to_string())?
         .last()
         .map(|record| record.record_hash.clone());
+    let mut payload = serde_json::json!({
+        "mode": "append",
+        "trigger": trigger,
+        "report": report
+    });
+    if let Some(observation) = model_observation {
+        payload["model_observation"] = observation;
+    }
     append_event(
         store,
         AppendInput {
             previous_record_hash: previous.clone(),
             envelope: event_envelope("MetaReconcileRecorded", previous),
-            payload: serde_json::json!({
-                "mode": "append",
-                "trigger": trigger,
-                "report": report
-            }),
+            payload,
         },
     )
     .map_err(|err| err.to_string())
 }
 
 fn append_reconcile_followups(store: &std::path::Path, report: &Value) -> Result<Value, String> {
+    let mut existing_records = read_records(store).map_err(|err| err.to_string())?;
     let mut records = Vec::new();
     for action in report
         .get("actions")
         .and_then(Value::as_array)
         .ok_or_else(|| "report.actions must be an array".to_string())?
     {
-        let Some(event_type) = followup_event_type(action.get("action").and_then(Value::as_str))
-        else {
-            continue;
-        };
-        let previous = read_records(store)
-            .map_err(|err| err.to_string())?
-            .last()
-            .map(|record| record.record_hash.clone());
-        let record = append_event(
-            store,
-            AppendInput {
-                previous_record_hash: previous.clone(),
-                envelope: event_envelope(event_type, previous),
-                payload: followup_payload(event_type, action),
-            },
-        )
-        .map_err(|err| err.to_string())?;
-        records.push(serde_json::json!({
-            "event_type": event_type,
-            "record_hash": record.record_hash
-        }));
+        for event_type in followup_event_types(action.get("action").and_then(Value::as_str)) {
+            let payload = followup_payload(event_type, action);
+            if followup_already_recorded(&existing_records, event_type, &payload) {
+                continue;
+            }
+            let previous = read_records(store)
+                .map_err(|err| err.to_string())?
+                .last()
+                .map(|record| record.record_hash.clone());
+            let record = append_event(
+                store,
+                AppendInput {
+                    previous_record_hash: previous.clone(),
+                    envelope: event_envelope(event_type, previous),
+                    payload,
+                },
+            )
+            .map_err(|err| err.to_string())?;
+            records.push(serde_json::json!({
+                "event_type": event_type,
+                "record_hash": record.record_hash
+            }));
+            existing_records.push(record);
+        }
     }
     Ok(Value::Array(records))
 }
 
-fn followup_event_type(action: Option<&str>) -> Option<&'static str> {
-    match action? {
-        "await_worker_report" => Some("WorkerFollowupRequested"),
-        "hold_failed_ci" | "hold_dirty_claim" => Some("RepairTaskCreated"),
-        "hold_until_branch_updated" => Some("BranchUpdateRequested"),
-        "supersede_duplicate_claim" => Some("DuplicateClaimRecorded"),
-        "run_merge_check" => Some("MergeCheckRequested"),
-        "record_pr_merged" => Some("PRMerged"),
-        _ => None,
+fn followup_already_recorded(
+    records: &[turingosv5::devtool::DevTapeRecord],
+    event_type: &str,
+    payload: &Value,
+) -> bool {
+    records.iter().any(|record| {
+        record.envelope["event_type"].as_str() == Some(event_type)
+            && record.payload.get("pr_number") == payload.get("pr_number")
+            && record.payload.get("atom_id") == payload.get("atom_id")
+            && record
+                .payload
+                .get("source_action")
+                .and_then(|source| source.get("action"))
+                == payload
+                    .get("source_action")
+                    .and_then(|source| source.get("action"))
+    })
+}
+
+fn followup_event_types(action: Option<&str>) -> Vec<&'static str> {
+    let Some(action) = action else {
+        return Vec::new();
+    };
+    match action {
+        "record_task_claim" => vec!["TaskClaimed"],
+        "record_worker_report" => vec!["TaskClaimed", "WorkerReportSubmitted"],
+        "await_worker_report" => vec!["WorkerFollowupRequested"],
+        "hold_failed_ci" | "hold_dirty_claim" => vec!["RepairTaskCreated"],
+        "hold_until_branch_updated" => vec!["BranchUpdateRequested"],
+        "supersede_duplicate_claim" => vec!["DuplicateClaimRecorded"],
+        "run_merge_check" => vec![
+            "MergeCheckRequested",
+            "AuditVerdictSubmitted",
+            "VetoVerdictSubmitted",
+            "MergeDecisionRecorded",
+        ],
+        "record_pr_merged" => vec!["PRMerged"],
+        _ => Vec::new(),
     }
 }
 
 fn followup_payload(event_type: &str, action: &Value) -> Value {
+    if event_type == "TaskClaimed" {
+        return serde_json::json!({
+            "atom_id": action.get("atom_id").cloned().unwrap_or(Value::Null),
+            "pr_number": action.get("pr_number").cloned().unwrap_or(Value::Null),
+            "pr_url": action.get("url").cloned().unwrap_or(Value::Null),
+            "claim_method": "github_draft_pr",
+            "createdAt": action.get("created_at").cloned().unwrap_or(Value::Null),
+            "source_action": action,
+            "runtime_truth": false
+        });
+    }
+    if event_type == "WorkerReportSubmitted" {
+        return serde_json::json!({
+            "atom_id": action.get("atom_id").cloned().unwrap_or(Value::Null),
+            "pr_number": action.get("pr_number").cloned().unwrap_or(Value::Null),
+            "pr_url": action.get("url").cloned().unwrap_or(Value::Null),
+            "worker_halt_confirmation": "[WORKER_HALT]",
+            "source_action": action,
+            "runtime_truth": false
+        });
+    }
+    if event_type == "MergeCheckRequested" {
+        return serde_json::json!({
+            "atom_id": action.get("atom_id").cloned().unwrap_or(Value::Null),
+            "pr_number": action.get("pr_number").cloned().unwrap_or(Value::Null),
+            "pr_url": action.get("url").cloned().unwrap_or(Value::Null),
+            "source_action": action,
+            "runtime_truth": false
+        });
+    }
+    if event_type == "AuditVerdictSubmitted" {
+        return serde_json::json!({
+            "atom_id": action.get("atom_id").cloned().unwrap_or(Value::Null),
+            "pr_number": action.get("pr_number").cloned().unwrap_or(Value::Null),
+            "verdict": action.get("audit_verdict").cloned().unwrap_or_else(|| serde_json::json!("HOLD")),
+            "reasons": action.get("audit_reasons").cloned().unwrap_or_else(|| serde_json::json!([])),
+            "changed_files": action.get("changed_files").cloned().unwrap_or_else(|| serde_json::json!([])),
+            "source_action": action,
+            "runtime_truth": false
+        });
+    }
+    if event_type == "VetoVerdictSubmitted" {
+        return serde_json::json!({
+            "atom_id": action.get("atom_id").cloned().unwrap_or(Value::Null),
+            "pr_number": action.get("pr_number").cloned().unwrap_or(Value::Null),
+            "verdict": action.get("veto_verdict").cloned().unwrap_or_else(|| serde_json::json!("VETO")),
+            "violations": action.get("veto_violations").cloned().unwrap_or_else(|| serde_json::json!([])),
+            "source_action": action,
+            "runtime_truth": false
+        });
+    }
+    if event_type == "MergeDecisionRecorded" {
+        return serde_json::json!({
+            "atom_id": action.get("atom_id").cloned().unwrap_or(Value::Null),
+            "pr_number": action.get("pr_number").cloned().unwrap_or(Value::Null),
+            "decision": action.get("merge_decision").cloned().unwrap_or_else(|| serde_json::json!("HOLD")),
+            "required_ci_passed": action.get("required_ci_passed").cloned().unwrap_or(Value::Bool(false)),
+            "audit_passed": action.get("audit_verdict").and_then(Value::as_str) == Some("PASS"),
+            "veto_passed": action.get("veto_verdict").and_then(Value::as_str) == Some("PASS"),
+            "conversation_resolution": action.get("conversation_resolution").cloned().unwrap_or(Value::Bool(false)),
+            "branch_protection_snapshot": action.get("branch_protection_snapshot").cloned().unwrap_or(Value::Null),
+            "merge_state_status": action.get("merge_state_status").cloned().unwrap_or(Value::Null),
+            "source_action": action,
+            "merge_executed": false,
+            "runtime_truth": false
+        });
+    }
     if event_type == "PRMerged" {
         let merge_commit = action
             .get("merge_commit_sha")
@@ -946,7 +1372,7 @@ fn github_reconcile_prs() -> Result<Value, String> {
             "--limit",
             "50",
             "--json",
-            "number,title,headRefName,isDraft,createdAt,url,body,mergeStateStatus,statusCheckRollup,state,mergedAt,mergeCommit",
+            "number,title,headRefName,isDraft,createdAt,url,body,mergeStateStatus,statusCheckRollup,state,mergedAt,mergeCommit,files,reviewDecision",
         ])
         .output()
         .map_err(|err| err.to_string())?;
@@ -974,6 +1400,12 @@ fn optional_flag_path(args: &[String], name: &str) -> Option<PathBuf> {
     args.windows(2)
         .find(|window| window[0] == name)
         .map(|window| PathBuf::from(window[1].clone()))
+}
+
+fn optional_flag_value(args: &[String], name: &str) -> Option<String> {
+    args.windows(2)
+        .find(|window| window[0] == name)
+        .map(|window| window[1].clone())
 }
 
 fn flag_value(args: &[String], name: &str) -> Result<String, String> {
@@ -1007,6 +1439,7 @@ fn usage() -> String {
         "  turingos-dev audit --store <events.jsonl> --board <board.json>",
         "  turingos-dev merge check --store <events.jsonl> --pr <number>",
         "  turingos-dev loop once --store <events.jsonl> --board-out <board.json> [--prs-file <prs.json>]",
+        "  turingos-dev meta run --store <events.jsonl> --board-out <board.json> [--iterations <n>] [--interval-ms <ms>] [--meta-adapter deepseek] [--meta-config <config.json>] [--model-response-file <text>] [--prs-file <prs.json>]",
         "  turingos-dev meta reconcile --dry-run --board <board.json> [--prs-file <prs.json>]",
         "  turingos-dev meta reconcile --append --store <events.jsonl> --board <board.json> [--prs-file <prs.json>]",
         "  turingos-dev worker sandbox create --task <task.json> --repo <repo> --out <sandbox>",
