@@ -610,6 +610,73 @@ fn harness_worker_claim_protocol_is_sandbox_first_with_draft_pr_fallback() {
 }
 
 #[test]
+fn remote_worker_prompt_preserves_board_self_selection() {
+    let root = repo_root();
+    let prompt_path = root.join("docs/harness/boot_prompts/remote_worker_market.md");
+    assert!(
+        prompt_path.exists(),
+        "remote worker market prompt must exist"
+    );
+    let prompt = read_text(&prompt_path);
+    let lower = prompt.to_ascii_lowercase();
+
+    assert!(
+        prompt.contains("https://github.com/gretjia/turingosv5.git"),
+        "remote prompt must give external clients the GitHub URL"
+    );
+    assert!(
+        lower.contains("self-select") && lower.contains("task board"),
+        "remote prompt must preserve WorkerAI self-selection from the board"
+    );
+    assert!(
+        prompt.contains("gh pr list") && prompt.contains("ATOM_ID"),
+        "remote prompt must overlay open GitHub PR claims before selecting work"
+    );
+    assert!(
+        prompt.contains("git sparse-checkout"),
+        "remote prompt must use sparse checkout instead of full-repo intake"
+    );
+    assert!(
+        prompt.contains("Execution phase") && prompt.contains("allowed_files"),
+        "remote prompt must narrow context only after a task is selected"
+    );
+    assert!(
+        !prompt.contains("/home/zephryj/projects/turingosv5"),
+        "remote prompt must not assume access to the local maintainer checkout"
+    );
+    assert!(
+        !lower.contains("metaai assigns")
+            && !lower.contains("single task package")
+            && !lower.contains("only one task packet from meta"),
+        "remote prompt must not turn the board market into MetaAI task assignment"
+    );
+    assert!(
+        !prompt.contains("Do not modify `TASK_BOARD.json`"),
+        "remote prompt should rely on sparse checkout and allowed_files, not repeated prohibitions"
+    );
+}
+
+#[test]
+fn task_broadcast_policy_names_market_then_sandbox_phases() {
+    let root = repo_root();
+    let policy = read_text(root.join("docs/harness/TASK_BROADCAST_POLICY.md"));
+    let lower = policy.to_ascii_lowercase();
+
+    assert!(
+        lower.contains("public task market"),
+        "task policy must name the board as a public task market"
+    );
+    assert!(
+        policy.contains("Selection phase") && policy.contains("Execution phase"),
+        "task policy must separate board self-selection from sandbox execution"
+    );
+    assert!(
+        policy.contains("GitHub open PR") && policy.contains("claim overlay"),
+        "task policy must require remote workers to overlay live GitHub claims"
+    );
+}
+
+#[test]
 fn worktree_policy_uses_canonical_task_worktree_path() {
     let root = repo_root();
     let policy = read_text(root.join("docs/harness/WORKTREE_POLICY.md"));

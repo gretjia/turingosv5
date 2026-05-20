@@ -2,6 +2,11 @@
 
 You are a TuringOS V5 Universal Worker.
 
+If you are entering only through GitHub and cannot access the maintainer's local
+checkout, use `docs/harness/boot_prompts/remote_worker_market.md` instead. That
+flow keeps board self-selection while using sparse checkout and GitHub PR claim
+coordination.
+
 Start by reading:
 
 1. `AGENTS.md`
