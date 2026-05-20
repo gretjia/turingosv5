@@ -8,13 +8,15 @@ Workers may read it. Workers may not modify it.
 ## Status Machine
 
 ```text
-open -> claimed -> pr_open -> needs_repair -> merged
+open -> claimed -> submitted -> pr_open -> needs_repair -> merged
 open -> superseded
 open -> blocked
 open -> retired
 ```
 
-Claims are expressed by PRs, not direct board edits.
+Claims are expressed by DevTape `TaskClaimed` events. Legacy draft PR claims are
+compatibility evidence only for tasks that explicitly require
+`claim_method: "draft_pr"`.
 
 ## Board Guards
 
@@ -22,16 +24,30 @@ Claims are expressed by PRs, not direct board edits.
 - `worker_halt_required: true`
 - `conflict_policy: "supersede_on_dirty"`
 - `claim_required: true` for smoke tasks
-- `claim_method: "draft_pr"` for smoke tasks
+- `claim_method: "sandbox"` for new tasks
 
 Workers must submit a WorkerReport containing `[WORKER_HALT]`, then stop.
 Meta converts dirty merge states into `SUPERSEDE`; dirty PRs are evidence, not
 accepted state.
 
+## Sandbox Claims
+
+Default worker intake is:
+
+```bash
+turingos-dev worker claim next --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --out-root /home/zephryj/projects/turingosv5-sandboxes --worker <worker_slot>
+```
+
+The command appends `TaskClaimed` evidence and emits a generated sandbox. Worker
+submissions return through `turingos-dev worker sandbox submit`, which validates
+allowed files, `[WORKER_HALT]`, and local gates before recording
+`WorkerReportSubmitted`.
+
 ## Draft PR Claims
 
-Smoke tasks require draft PR claims even for Class 0/1. Claim facts come from
-GitHub PRs, not worker edits to `TASK_BOARD.json`.
+Draft PR claims are legacy fallback for tasks that explicitly require
+`claim_method: "draft_pr"`. Claim facts still must not come from worker edits to
+`TASK_BOARD.json`.
 
 Valid claim title:
 
@@ -44,22 +60,22 @@ When multiple draft PRs claim the same atom, the earliest valid claim by
 
 ## Race Window
 
-Two workers can read the same board before any draft PR exists. This is allowed
-as a race condition, not as accepted parallel work.
+Two workers can read the same board before either one appends `TaskClaimed`.
+This is allowed as a race condition, not as accepted parallel work.
 
-Workers reduce duplicate waste by checking open PRs before worktree creation,
-checking again before implementation edits, opening the draft claim PR before
-coding, and refreshing open PRs after the draft PR exists. If an earlier valid
-claim exists, the later worker must stop instead of continuing implementation.
+Workers reduce duplicate waste by claiming through
+`turingos-dev worker claim next`, which replays DevTape state before emitting a
+sandbox. Legacy draft PR workers must still check open PRs before worktree
+creation, before implementation edits, and after opening the draft claim.
 
-The board may lag behind PR claims. Meta reconciliation updates the board after
-observing PR evidence; WorkerAI sessions must use open PR claims as the live coordination signal
-during the race window.
+The board may lag behind claims. Meta reconciliation updates the board after
+observing DevTape and PR evidence; WorkerAI sessions must use DevTape
+`TaskClaimed` records as the live coordination signal during the race window.
 
 ## Claim Modes
 
 - Class 0/1: `open_pool`; duplicates allowed; first valid PR wins.
-- Class 2: `soft_lease`; draft PR claim preferred.
+- Class 2: `soft_lease`; sandbox claim first, draft PR fallback if required.
 - Class 3: Meta-opened only; independent audit and Veto required.
 - Class 4: never self-select; direct assignment after exact ratification only.
 

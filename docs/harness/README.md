@@ -7,18 +7,20 @@ CLI sessions start unassigned. They read `AGENTS.md` first, then
 `AGENT_ENTRY.md`, then enter a role only when the human prompt, TaskPacket,
 ReviewPacket, or Meta continuation explicitly assigns one.
 
-Worker role sessions do not freely write code. They select one eligible
-TaskPacket from the Task Broadcast, work only inside allowed paths, run the
-required tests, open a PR, submit WorkerReport, and stop.
+Worker role sessions do not freely write code. They claim one eligible
+TaskPacket through `turingos-dev worker claim next`, work only inside the
+generated sandbox, submit `candidate.patch` plus WorkerReport through
+`turingos-dev worker sandbox submit`, and stop.
 
 Meta role sessions own the broadcast board, PR reconciliation, review
 coordination, Veto requests, merge decisions, and development evidence
 recording.
 
-Normal distribution is board-first. MetaAI publishes or reconciles the board;
-WorkerAI sessions read the board and claim by draft PR. The board is a
-projection/control view, while the live claim fact is the earliest valid draft
-PR for an atom.
+Normal distribution is DevTape/board-first. MetaAI appends DevEvents and
+derives the board; WorkerAI sessions claim through DevTape-backed sandbox
+intake. The board is a projection/control view, while the live claim fact is
+`TaskClaimed` evidence. Draft PR claim remains a legacy fallback for tasks that
+explicitly require it.
 
 ## Files
 

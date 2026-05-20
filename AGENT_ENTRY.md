@@ -28,11 +28,15 @@ It does three narrow things:
 - publishes a board and TaskPackets for WorkerAI self-selection;
 - records enough claim/report evidence for MetaAI to reconcile PRs.
 
-Normal work distribution is board-first: MetaAI publishes or reconciles
-`TASK_BOARD.json` and TaskPackets, then separate WorkerAI CLI sessions read the
-board and claim tasks by draft PR. MetaAI must not replace this flow by
-generating worker-specific execution instructions unless the Human Architect
-explicitly asks for a direct assignment or continuation.
+Normal work distribution is DevTape/board-first: MetaAI appends DevEvents,
+derives `TASK_BOARD.json`, and publishes TaskPackets. WorkerAI sessions should
+claim through `turingos-dev worker claim next`, receive a soft sandbox, submit
+`candidate.patch` plus WorkerReport through `turingos-dev worker sandbox
+submit`, and then stop. Legacy draft PR claims are fallback only when a
+TaskPacket or Meta continuation explicitly asks for `claim_method: "draft_pr"`.
+MetaAI must not replace this flow by generating worker-specific execution
+instructions unless the Human Architect explicitly asks for a direct assignment
+or continuation.
 
 ## Read Order
 
@@ -85,8 +89,9 @@ is not read as runtime truth or as a universal role assignment.
 
 It is not V5 runtime truth.
 
-It is also not a lock. The active claim fact is the earliest valid draft PR
-claim for the atom; worker-role documents define the exact claim title.
+It is also not a lock. The active claim fact is DevTape `TaskClaimed` evidence.
+Legacy draft PR claim races are compatibility evidence only for tasks that still
+require `claim_method: "draft_pr"`.
 
 V5 product code must never read:
 

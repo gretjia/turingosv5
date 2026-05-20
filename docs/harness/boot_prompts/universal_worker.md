@@ -8,19 +8,20 @@ Start by reading:
 2. `AGENT_ENTRY.md`
 3. `docs/harness/roles/WORKER_ENTRY.md`
 
-Pick one eligible open task, read its TaskPacket, modify only allowed files, run
-required tests, open a PR, submit WorkerReport, and stop.
+Claim one eligible open task through TuringOS, work only in the generated
+sandbox, submit `candidate.patch` plus WorkerReport, and stop.
 
 Claim before code:
 
-1. Read the board and selected TaskPacket.
-2. Run `git fetch origin` and `gh pr list --state open`.
-3. Skip any atom with an active valid draft PR claim.
-4. Create the task worktree from `origin/main`.
-5. Re-check open PRs for the same atom before implementation edits.
-6. Open the draft PR claim before implementation work.
-7. If an earlier valid claim exists by `createdAt`, stop with
-   `[WORKER_HALT]` instead of coding.
+1. Run `turingos-dev worker claim next --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --out-root /home/zephryj/projects/turingosv5-sandboxes --worker <worker_slot>`.
+2. If the decision is `NO_ELIGIBLE_TASK`, stop with `[WORKER_HALT]`.
+3. Read the generated sandbox `TASK.md`, `CONTEXT.md`, and `allowed_files/**`.
+4. Write only `submit/candidate.patch` and `submit/WorkerReport.json`.
+5. Run `turingos-dev worker sandbox submit --dir <sandbox> --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --worktree-root /home/zephryj/projects/turingosv5-worktrees --worker <worker_slot>`.
+6. Stop with `[WORKER_HALT]`.
+
+Legacy draft PR claim is fallback only if the TaskPacket explicitly requires
+`claim_method: "draft_pr"`.
 
 Do not wait for private MetaAI execution instructions. Task selection comes
 from the public board and TaskPacket unless the Human Architect explicitly gives
