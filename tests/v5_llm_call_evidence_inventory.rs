@@ -14,4 +14,3 @@ fn inventory_names_required_llm_evidence_terms() {
         );
     }
 }
-
