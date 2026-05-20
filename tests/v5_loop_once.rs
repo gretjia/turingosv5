@@ -262,6 +262,89 @@ fn loop_once_derives_board_and_appends_reconcile_followup_events() {
 }
 
 #[test]
+fn loop_once_records_pr_merged_and_rederives_board_projection() {
+    let dir = temp_path("pr-merged");
+    fs::create_dir_all(&dir).expect("temp dir should be created");
+    let store = dir.join("events.jsonl");
+    let board = dir.join("TASK_BOARD.json");
+    let prs = dir.join("prs.json");
+    let atom = "V5-LOOP-MERGED";
+    seed_task(&store, atom, "pr_open", Some(36), None);
+    write_json(
+        &prs,
+        &json!([
+            {
+                "number": 36,
+                "title": "[CLAIM][V5-LOOP-MERGED][Class1] Worker claim",
+                "state": "MERGED",
+                "isDraft": false,
+                "createdAt": "2026-05-20T07:55:44Z",
+                "mergedAt": "2026-05-20T08:01:33Z",
+                "url": "https://github.com/gretjia/turingosv5/pull/36",
+                "body": "ClaimRecord\n- atom_id: V5-LOOP-MERGED\n\nWorkerReport\n[WORKER_HALT]",
+                "mergeStateStatus": "UNKNOWN",
+                "mergeCommit": {"oid": "59f284a9b1905851f104f9bf2ec512ce11ee33ca"},
+                "statusCheckRollup": [{"name": "ci-basic", "conclusion": "SUCCESS"}]
+            }
+        ]),
+    );
+
+    let output = Command::new(bin())
+        .args([
+            "loop",
+            "once",
+            "--store",
+            store.to_str().expect("utf8 store"),
+            "--board-out",
+            board.to_str().expect("utf8 board"),
+            "--prs-file",
+            prs.to_str().expect("utf8 prs"),
+        ])
+        .output()
+        .expect("loop once should run");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let records = read_records(&store).expect("records should read");
+    let pr_merged = records
+        .iter()
+        .find(|record| record.envelope["event_type"] == "PRMerged")
+        .expect("loop once must append PRMerged evidence");
+    assert_eq!(pr_merged.payload["atom_id"], atom);
+    assert_eq!(pr_merged.payload["pr_number"], 36);
+    assert_eq!(
+        pr_merged.payload["merge_commit_sha"],
+        "59f284a9b1905851f104f9bf2ec512ce11ee33ca"
+    );
+
+    let board_projection: Value =
+        serde_json::from_slice(&fs::read(&board).expect("board should read")).expect("board json");
+    let row = board_projection["tasks"]
+        .as_array()
+        .expect("tasks")
+        .iter()
+        .find(|task| task["atom_id"] == atom)
+        .expect("merged task row");
+    assert_eq!(row["status"], "merged");
+    assert_eq!(row["pr_number"], 36);
+    assert_eq!(
+        row["main_after"],
+        "59f284a9b1905851f104f9bf2ec512ce11ee33ca"
+    );
+    assert!(
+        row["source_event_cids"]
+            .as_array()
+            .expect("source cids")
+            .iter()
+            .any(|cid| cid == &json!(pr_merged.record_hash)),
+        "derived board must cite PRMerged record hash"
+    );
+}
+
+#[test]
 fn loop_once_overwrites_manual_board_projection_from_devtape() {
     let dir = temp_path("board-rederive");
     fs::create_dir_all(&dir).expect("temp dir should be created");

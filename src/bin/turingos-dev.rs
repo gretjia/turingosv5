@@ -104,7 +104,7 @@ fn run() -> Result<(), String> {
                 serde_json::from_slice(&fs::read(path).map_err(|err| err.to_string())?)
                     .map_err(|err| err.to_string())?
             } else {
-                github_open_prs()?
+                github_reconcile_prs()?
             };
             let report = meta_reconcile_report(&board, &prs).map_err(|err| err.to_string())?;
             if append {
@@ -232,11 +232,18 @@ fn loop_once(
         serde_json::from_slice(&fs::read(path).map_err(|err| err.to_string())?)
             .map_err(|err| err.to_string())?
     } else {
-        github_open_prs()?
+        github_reconcile_prs()?
     };
     let report = meta_reconcile_report(&board, &prs).map_err(|err| err.to_string())?;
     let reconcile = append_meta_reconcile_with_trigger(store, report.clone(), "loop_once")?;
     let followups = append_reconcile_followups(store, &report)?;
+    let final_board = derive_board(store).map_err(|err| err.to_string())?;
+    fs::write(
+        board_out,
+        serde_json::to_vec_pretty(&final_board).map_err(|err| err.to_string())?,
+    )
+    .map_err(|err| err.to_string())?;
+    audit_board_drift(store, &final_board).map_err(|err| err.to_string())?;
     Ok(serde_json::json!({
         "mode": "loop_once",
         "board_out": board_out.display().to_string(),
@@ -298,10 +305,7 @@ fn append_reconcile_followups(store: &std::path::Path, report: &Value) -> Result
             AppendInput {
                 previous_record_hash: previous.clone(),
                 envelope: event_envelope(event_type, previous),
-                payload: serde_json::json!({
-                    "source_action": action,
-                    "merge_executed": false
-                }),
+                payload: followup_payload(event_type, action),
             },
         )
         .map_err(|err| err.to_string())?;
@@ -320,8 +324,34 @@ fn followup_event_type(action: Option<&str>) -> Option<&'static str> {
         "hold_until_branch_updated" => Some("BranchUpdateRequested"),
         "supersede_duplicate_claim" => Some("DuplicateClaimRecorded"),
         "run_merge_check" => Some("MergeCheckRequested"),
+        "record_pr_merged" => Some("PRMerged"),
         _ => None,
     }
+}
+
+fn followup_payload(event_type: &str, action: &Value) -> Value {
+    if event_type == "PRMerged" {
+        let merge_commit = action
+            .get("merge_commit_sha")
+            .cloned()
+            .unwrap_or(Value::Null);
+        return serde_json::json!({
+            "atom_id": action.get("atom_id").cloned().unwrap_or(Value::Null),
+            "pr_number": action.get("pr_number").cloned().unwrap_or(Value::Null),
+            "pr_url": action.get("url").cloned().unwrap_or(Value::Null),
+            "merged_at": action.get("merged_at").cloned().unwrap_or(Value::Null),
+            "merge_method": "squash",
+            "main_after": merge_commit,
+            "merge_commit_sha": action.get("merge_commit_sha").cloned().unwrap_or(Value::Null),
+            "squash_commit_sha": action.get("merge_commit_sha").cloned().unwrap_or(Value::Null),
+            "source_action": action,
+            "merge_executed": false
+        });
+    }
+    serde_json::json!({
+        "source_action": action,
+        "merge_executed": false
+    })
 }
 
 fn worker_sandbox_submit(
@@ -906,15 +936,17 @@ fn worker_submit_event_envelope(event_type: &str, previous: Option<String>) -> V
     })
 }
 
-fn github_open_prs() -> Result<Value, String> {
+fn github_reconcile_prs() -> Result<Value, String> {
     let output = Command::new("gh")
         .args([
             "pr",
             "list",
             "--state",
-            "open",
+            "all",
+            "--limit",
+            "50",
             "--json",
-            "number,title,headRefName,isDraft,createdAt,url,body,mergeStateStatus,statusCheckRollup",
+            "number,title,headRefName,isDraft,createdAt,url,body,mergeStateStatus,statusCheckRollup,state,mergedAt,mergeCommit",
         ])
         .output()
         .map_err(|err| err.to_string())?;
