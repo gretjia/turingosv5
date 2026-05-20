@@ -182,6 +182,7 @@ git sparse-checkout add \
   /README.md \
   /AGENTS.md \
   /AGENT_ENTRY.md \
+  /HARNESS.md \
   /CHARTER.md \
   /CODEX.md \
   /CLAUDE.md \
