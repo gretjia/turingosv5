@@ -24,23 +24,33 @@ ReviewPacket, or Meta continuation explicitly assigns that role.
 The harness is a CLI intake layer. It is not the V5 kernel, scheduler, runtime
 truth source, or worker execution manager.
 
-Normal distribution is board-first:
+Normal distribution is board-first. The board is a public task market, not a
+private MetaAI assignment channel:
 
 1. MetaAI publishes or reconciles `docs/harness/broadcast/TASK_BOARD.json` and
    TaskPackets.
-2. Separate WorkerAI CLI sessions read the board.
+2. Separate WorkerAI CLI sessions read the board and TaskPacket summaries.
 3. Each WorkerAI self-selects exactly one eligible task.
-4. Each WorkerAI claims by draft PR before implementation.
-5. MetaAI reconciles PR claim evidence, CI, review, Veto, and WorkerReport.
+4. Each WorkerAI overlays live GitHub open PR claims and skips atoms that are
+   already claimed.
+5. Each WorkerAI claims before implementation, then narrows to that task's
+   allowed context.
+6. MetaAI reconciles PR claim evidence, CI, review, Veto, and WorkerReport.
 
 MetaAI should not replace this flow with private worker-specific execution
 instructions unless the Human Architect explicitly requests a direct assignment
 or continuation.
 
+External GitHub-only workers should start from
+`docs/harness/boot_prompts/remote_worker_market.md`. That prompt gives the
+GitHub URL, sparse-checkout intake, board self-selection, and PR claim overlay
+without assuming access to the maintainer's local checkout.
+
 ## Parallel Workers
 
-`TASK_BOARD.json` is a projection/control view, not a lock service. The live
-claim fact is the earliest valid draft PR whose title matches:
+`TASK_BOARD.json` is a projection/control view, not a lock service. For remote
+workers, live claim coordination is the GitHub open PR claim overlay. Legacy
+draft claim titles match:
 
 ```text
 [CLAIM][<atom_id>][ClassX] <task title>
