@@ -5,9 +5,9 @@ use std::path::PathBuf;
 use std::process::{self, Command};
 use std::time::{SystemTime, UNIX_EPOCH};
 use turingosv5::devtool::{
-    append_event, audit_board_drift, console_text, create_worker_sandbox, derive_board,
-    merge_check, meta_reconcile_report, read_records, validate_worker_sandbox_submission,
-    AppendInput, MergeGateDecision,
+    append_event, apply_worker_sandbox_submission, audit_board_drift, console_text,
+    create_worker_sandbox, derive_board, merge_check, meta_reconcile_report, read_records,
+    validate_worker_sandbox_submission, AppendInput, MergeGateDecision,
 };
 
 fn main() {
@@ -78,6 +78,16 @@ fn run() -> Result<(), String> {
                 Err("merge gate did not proceed".to_string())
             }
         }
+        [loop_cmd, once, rest @ ..] if loop_cmd == "loop" && once == "once" => {
+            let store = flag_path(rest, "--store")?;
+            let board_out = flag_path(rest, "--board-out")?;
+            let result = loop_once(&store, &board_out, optional_flag_path(rest, "--prs-file"))?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&result).map_err(|err| err.to_string())?
+            );
+            Ok(())
+        }
         [meta, reconcile, rest @ ..] if meta == "meta" && reconcile == "reconcile" => {
             let dry_run = rest.iter().any(|arg| arg == "--dry-run");
             let append = rest.iter().any(|arg| arg == "--append");
@@ -146,14 +156,71 @@ fn run() -> Result<(), String> {
             );
             Ok(())
         }
+        [worker, sandbox, apply, rest @ ..]
+            if worker == "worker" && sandbox == "sandbox" && apply == "apply" =>
+        {
+            let dir = flag_path(rest, "--dir")?;
+            let worktree = flag_path(rest, "--worktree")?;
+            let result =
+                apply_worker_sandbox_submission(&dir, &worktree).map_err(|err| err.to_string())?;
+            println!("SANDBOX_APPLY_PASS");
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&result).map_err(|err| err.to_string())?
+            );
+            Ok(())
+        }
         [console, rest @ ..] if console == "console" => run_console(rest),
         _ => Err(usage()),
     }
 }
 
+fn loop_once(
+    store: &std::path::Path,
+    board_out: &std::path::Path,
+    prs_file: Option<PathBuf>,
+) -> Result<Value, String> {
+    let board = derive_board(store).map_err(|err| err.to_string())?;
+    if let Some(parent) = board_out.parent() {
+        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    }
+    fs::write(
+        board_out,
+        serde_json::to_vec_pretty(&board).map_err(|err| err.to_string())?,
+    )
+    .map_err(|err| err.to_string())?;
+    audit_board_drift(store, &board).map_err(|err| err.to_string())?;
+
+    let prs = if let Some(path) = prs_file {
+        serde_json::from_slice(&fs::read(path).map_err(|err| err.to_string())?)
+            .map_err(|err| err.to_string())?
+    } else {
+        github_open_prs()?
+    };
+    let report = meta_reconcile_report(&board, &prs).map_err(|err| err.to_string())?;
+    let reconcile = append_meta_reconcile_with_trigger(store, report.clone(), "loop_once")?;
+    let followups = append_reconcile_followups(store, &report)?;
+    Ok(serde_json::json!({
+        "mode": "loop_once",
+        "board_out": board_out.display().to_string(),
+        "meta_reconcile_record": reconcile.record_hash,
+        "followup_records": followups,
+        "merge_executed": false,
+        "report": report
+    }))
+}
+
 fn append_meta_reconcile(
     store: &std::path::Path,
     report: Value,
+) -> Result<turingosv5::devtool::DevTapeRecord, String> {
+    append_meta_reconcile_with_trigger(store, report, "manual_cli")
+}
+
+fn append_meta_reconcile_with_trigger(
+    store: &std::path::Path,
+    report: Value,
+    trigger: &str,
 ) -> Result<turingosv5::devtool::DevTapeRecord, String> {
     let previous = read_records(store)
         .map_err(|err| err.to_string())?
@@ -166,12 +233,58 @@ fn append_meta_reconcile(
             envelope: event_envelope("MetaReconcileRecorded", previous),
             payload: serde_json::json!({
                 "mode": "append",
-                "trigger": "manual_cli",
+                "trigger": trigger,
                 "report": report
             }),
         },
     )
     .map_err(|err| err.to_string())
+}
+
+fn append_reconcile_followups(store: &std::path::Path, report: &Value) -> Result<Value, String> {
+    let mut records = Vec::new();
+    for action in report
+        .get("actions")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "report.actions must be an array".to_string())?
+    {
+        let Some(event_type) = followup_event_type(action.get("action").and_then(Value::as_str))
+        else {
+            continue;
+        };
+        let previous = read_records(store)
+            .map_err(|err| err.to_string())?
+            .last()
+            .map(|record| record.record_hash.clone());
+        let record = append_event(
+            store,
+            AppendInput {
+                previous_record_hash: previous.clone(),
+                envelope: event_envelope(event_type, previous),
+                payload: serde_json::json!({
+                    "source_action": action,
+                    "merge_executed": false
+                }),
+            },
+        )
+        .map_err(|err| err.to_string())?;
+        records.push(serde_json::json!({
+            "event_type": event_type,
+            "record_hash": record.record_hash
+        }));
+    }
+    Ok(Value::Array(records))
+}
+
+fn followup_event_type(action: Option<&str>) -> Option<&'static str> {
+    match action? {
+        "await_worker_report" => Some("WorkerFollowupRequested"),
+        "hold_failed_ci" | "hold_dirty_claim" => Some("RepairTaskCreated"),
+        "hold_until_branch_updated" => Some("BranchUpdateRequested"),
+        "supersede_duplicate_claim" => Some("DuplicateClaimRecorded"),
+        "run_merge_check" => Some("MergeCheckRequested"),
+        _ => None,
+    }
 }
 
 fn event_envelope(event_type: &str, previous: Option<String>) -> Value {
@@ -279,10 +392,12 @@ fn usage() -> String {
         "  turingos-dev board derive --store <events.jsonl> --out <board.json>",
         "  turingos-dev audit --store <events.jsonl> --board <board.json>",
         "  turingos-dev merge check --store <events.jsonl> --pr <number>",
+        "  turingos-dev loop once --store <events.jsonl> --board-out <board.json> [--prs-file <prs.json>]",
         "  turingos-dev meta reconcile --dry-run --board <board.json> [--prs-file <prs.json>]",
         "  turingos-dev meta reconcile --append --store <events.jsonl> --board <board.json> [--prs-file <prs.json>]",
         "  turingos-dev worker sandbox create --task <task.json> --repo <repo> --out <sandbox>",
         "  turingos-dev worker sandbox validate --dir <sandbox>",
+        "  turingos-dev worker sandbox apply --dir <sandbox> --worktree <worktree>",
     ]
     .join("\n")
 }
