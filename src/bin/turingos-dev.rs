@@ -170,6 +170,20 @@ fn run() -> Result<(), String> {
             );
             Ok(())
         }
+        [worker, claim, next, rest @ ..]
+            if worker == "worker" && claim == "claim" && next == "next" =>
+        {
+            let store = flag_path(rest, "--store")?;
+            let repo = flag_path(rest, "--repo")?;
+            let out_root = flag_path(rest, "--out-root")?;
+            let worker_slot = flag_value(rest, "--worker")?;
+            let result = worker_claim_next(&store, &repo, &out_root, &worker_slot)?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&result).map_err(|err| err.to_string())?
+            );
+            Ok(())
+        }
         [console, rest @ ..] if console == "console" => run_console(rest),
         _ => Err(usage()),
     }
@@ -287,11 +301,124 @@ fn followup_event_type(action: Option<&str>) -> Option<&'static str> {
     }
 }
 
-fn event_envelope(event_type: &str, previous: Option<String>) -> Value {
-    let observed_at = SystemTime::now()
+fn worker_claim_next(
+    store: &std::path::Path,
+    repo: &std::path::Path,
+    out_root: &std::path::Path,
+    worker_slot: &str,
+) -> Result<Value, String> {
+    let board = derive_board(store).map_err(|err| err.to_string())?;
+    let Some(task) = next_claimable_task(&board) else {
+        return Ok(serde_json::json!({
+            "decision": "NO_ELIGIBLE_TASK",
+            "runtime_truth": false
+        }));
+    };
+    let atom_id = task
+        .get("atom_id")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "task.atom_id must be a string".to_string())?;
+    let task_packet = task
+        .get("task_packet")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "task.task_packet must be a string".to_string())?;
+    if task_packet.is_empty() {
+        return Err(format!("task {atom_id} has empty task_packet"));
+    }
+
+    let task_path = path_from_repo(repo, task_packet);
+    let task_json: Value = serde_json::from_slice(
+        &fs::read(&task_path).map_err(|err| format!("read {}: {err}", task_path.display()))?,
+    )
+    .map_err(|err| err.to_string())?;
+    let sandbox_dir = out_root
+        .join(safe_segment(worker_slot))
+        .join(safe_segment(atom_id));
+    create_worker_sandbox(&task_json, repo, &sandbox_dir).map_err(|err| err.to_string())?;
+
+    let previous = read_records(store)
+        .map_err(|err| err.to_string())?
+        .last()
+        .map(|record| record.record_hash.clone());
+    let observed_at = unix_timestamp();
+    let record = append_event(
+        store,
+        AppendInput {
+            previous_record_hash: previous.clone(),
+            envelope: worker_event_envelope("TaskClaimed", previous),
+            payload: serde_json::json!({
+                "atom_id": atom_id,
+                "worker_slot": worker_slot,
+                "claim_method": "sandbox",
+                "sandbox_path": sandbox_dir.display().to_string(),
+                "task_packet": task_packet,
+                "createdAt": observed_at,
+                "runtime_truth": false
+            }),
+        },
+    )
+    .map_err(|err| err.to_string())?;
+
+    Ok(serde_json::json!({
+        "decision": "CLAIMED",
+        "atom_id": atom_id,
+        "sandbox_dir": sandbox_dir.display().to_string(),
+        "task_packet": task_packet,
+        "claim_record_hash": record.record_hash,
+        "runtime_truth": false
+    }))
+}
+
+fn next_claimable_task(board: &Value) -> Option<Value> {
+    board.get("tasks")?.as_array()?.iter().find_map(|task| {
+        let status = task.get("status").and_then(Value::as_str).unwrap_or("open");
+        let self_select = task
+            .get("self_select")
+            .and_then(Value::as_bool)
+            .unwrap_or(true);
+        let blockers_empty = task
+            .get("blockers")
+            .and_then(Value::as_array)
+            .is_none_or(Vec::is_empty);
+        if status == "open" && self_select && blockers_empty {
+            Some(task.clone())
+        } else {
+            None
+        }
+    })
+}
+
+fn path_from_repo(repo: &std::path::Path, path: &str) -> PathBuf {
+    let path = PathBuf::from(path);
+    if path.is_absolute() {
+        path
+    } else {
+        repo.join(path)
+    }
+}
+
+fn safe_segment(value: &str) -> String {
+    value
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                ch
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
+fn unix_timestamp() -> String {
+    SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|duration| format!("unix:{}", duration.as_secs()))
-        .unwrap_or_else(|_| "unix:0".to_string());
+        .unwrap_or_else(|_| "unix:0".to_string())
+}
+
+fn event_envelope(event_type: &str, previous: Option<String>) -> Value {
+    let observed_at = unix_timestamp();
     serde_json::json!({
         "event_id": format!("{event_type}-{observed_at}"),
         "event_type": event_type,
@@ -309,6 +436,40 @@ fn event_envelope(event_type: &str, previous: Option<String>) -> Value {
         },
         "evidence": {
             "commands": ["turingos-dev meta reconcile --append"],
+            "artifacts": [],
+            "source_anchors": []
+        },
+        "classification": {
+            "risk_class": 1,
+            "candidate": true,
+            "runtime_truth": false
+        },
+        "integrity": {
+            "payload_hash": "sha256:filled-by-append",
+            "envelope_hash": "sha256:filled-by-append"
+        }
+    })
+}
+
+fn worker_event_envelope(event_type: &str, previous: Option<String>) -> Value {
+    let observed_at = unix_timestamp();
+    serde_json::json!({
+        "event_id": format!("{event_type}-{observed_at}"),
+        "event_type": event_type,
+        "project_id": "turingosv5",
+        "actor_identity_cid": "sha256:worker-claim-cli",
+        "payload_cid": "sha256:filled-by-append",
+        "previous_event_cid": previous,
+        "observed_at": observed_at,
+        "source": "turingos-dev worker claim next",
+        "subject": {
+            "repo": "gretjia/turingosv5",
+            "branch": null,
+            "pr": null,
+            "files": []
+        },
+        "evidence": {
+            "commands": ["turingos-dev worker claim next"],
             "artifacts": [],
             "source_anchors": []
         },
@@ -398,6 +559,7 @@ fn usage() -> String {
         "  turingos-dev worker sandbox create --task <task.json> --repo <repo> --out <sandbox>",
         "  turingos-dev worker sandbox validate --dir <sandbox>",
         "  turingos-dev worker sandbox apply --dir <sandbox> --worktree <worktree>",
+        "  turingos-dev worker claim next --store <events.jsonl> --repo <repo> --out-root <dir> --worker <worker>",
     ]
     .join("\n")
 }
