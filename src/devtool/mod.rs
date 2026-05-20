@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppendInput {
@@ -95,6 +95,7 @@ pub type DevToolResult<T> = Result<T, DevToolError>;
 
 const EVENT_TYPES: &[&str] = &[
     "HumanIntentReceived",
+    "MetaReconcileRecorded",
     "DevTaskCreated",
     "TaskBroadcasted",
     "TaskSuperseded",
@@ -1097,6 +1098,100 @@ pub fn meta_reconcile_report(board: &Value, prs: &Value) -> DevToolResult<Value>
     }))
 }
 
+pub fn create_worker_sandbox(task: &Value, repo: &Path, out: &Path) -> DevToolResult<Value> {
+    if out.exists() {
+        return Err(DevToolError::new("worker sandbox output already exists"));
+    }
+    let atom_id = task
+        .get("atom_id")
+        .and_then(Value::as_str)
+        .ok_or_else(|| DevToolError::new("task.atom_id must be a string"))?;
+    let allowed_files = string_array(task, "allowed_files")?;
+    let forbidden_files = string_array(task, "forbidden_files")?;
+    for path in &allowed_files {
+        ensure_safe_relative_file(path, "allowed_files")?;
+    }
+
+    fs::create_dir_all(out.join("allowed_files")).map_err(io_error)?;
+    fs::create_dir_all(out.join("submit")).map_err(io_error)?;
+    for path in &allowed_files {
+        let source = repo.join(path);
+        if source.is_file() {
+            let destination = out.join("allowed_files").join(path);
+            if let Some(parent) = destination.parent() {
+                fs::create_dir_all(parent).map_err(io_error)?;
+            }
+            fs::copy(source, destination).map_err(io_error)?;
+        }
+    }
+
+    let manifest = json!({
+        "schema": "turingos.v5.worker_sandbox.v0",
+        "atom_id": atom_id,
+        "runtime_truth": false,
+        "soft_sandbox": true,
+        "allowed_files": allowed_files,
+        "forbidden_files": forbidden_files,
+        "submit_contract": {
+            "candidate_patch": "submit/candidate.patch",
+            "worker_report": "submit/WorkerReport.json",
+            "halt_required": "[WORKER_HALT]"
+        }
+    });
+    fs::write(
+        out.join("sandbox_manifest.json"),
+        serde_json::to_vec_pretty(&manifest).map_err(json_error)?,
+    )
+    .map_err(io_error)?;
+    fs::write(out.join("TASK.md"), worker_task_text(task, &manifest)).map_err(io_error)?;
+    fs::write(out.join("CONTEXT.md"), worker_context_text(task, &manifest)).map_err(io_error)?;
+    Ok(manifest)
+}
+
+pub fn validate_worker_sandbox_submission(dir: &Path) -> DevToolResult<Value> {
+    let manifest_path = dir.join("sandbox_manifest.json");
+    let manifest: Value =
+        serde_json::from_slice(&fs::read(manifest_path).map_err(io_error)?).map_err(json_error)?;
+    let allowed_files = string_array(&manifest, "allowed_files")?;
+    let forbidden_files = string_array(&manifest, "forbidden_files")?;
+    let patch_path = dir.join("submit/candidate.patch");
+    let report_path = dir.join("submit/WorkerReport.json");
+    let patch = fs::read_to_string(&patch_path).map_err(io_error)?;
+    let report = fs::read_to_string(&report_path).map_err(io_error)?;
+    if !report.contains("[WORKER_HALT]") {
+        return Err(DevToolError::new(
+            "WorkerReport.json must contain [WORKER_HALT]",
+        ));
+    }
+
+    let paths = patch_paths(&patch);
+    if paths.is_empty() {
+        return Err(DevToolError::new("candidate.patch touches no files"));
+    }
+    for path in &paths {
+        ensure_safe_relative_file(path, "candidate.patch")?;
+        if forbidden_files
+            .iter()
+            .any(|pattern| forbidden_match(pattern, path))
+        {
+            return Err(DevToolError::new(format!(
+                "patch path {path} matches forbidden_files"
+            )));
+        }
+        if !allowed_files.iter().any(|allowed| allowed == path) {
+            return Err(DevToolError::new(format!(
+                "patch path {path} is not in allowed_files"
+            )));
+        }
+    }
+
+    Ok(json!({
+        "decision": "PASS",
+        "paths": paths,
+        "runtime_truth": false
+    }))
+}
+
 fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Value {
     json!({
         "atom_id": atom_id,
@@ -1179,6 +1274,134 @@ fn pr_string(pr: &Value, key: &str) -> String {
         .and_then(Value::as_str)
         .unwrap_or("")
         .to_string()
+}
+
+fn worker_task_text(task: &Value, manifest: &Value) -> String {
+    let atom_id = task.get("atom_id").and_then(Value::as_str).unwrap_or("-");
+    let title = task.get("title").and_then(Value::as_str).unwrap_or("-");
+    let goal = task.get("goal").and_then(Value::as_str).unwrap_or("-");
+    format!(
+        "# Worker Sandbox Task\n\n\
+         atom_id: {atom_id}\n\
+         title: {title}\n\n\
+         Goal:\n{goal}\n\n\
+         This is a soft sandbox: it limits the context package and submission \
+         contract, but it is not a hard OS security boundary.\n\n\
+         Allowed files:\n{}\n\n\
+         Submit exactly:\n\
+         - submit/candidate.patch\n\
+         - submit/WorkerReport.json\n\n\
+         WorkerReport.json must contain [WORKER_HALT].\n",
+        markdown_list(manifest.get("allowed_files").unwrap_or(&Value::Null))
+    )
+}
+
+fn worker_context_text(task: &Value, manifest: &Value) -> String {
+    format!(
+        "# Worker Context\n\n\
+         Read only the files exported under allowed_files/ and this task context.\n\
+         Do not assume access to the full repository.\n\n\
+         Instructions:\n{}\n\n\
+         Acceptance tests:\n{}\n\n\
+         Forbidden files:\n{}\n",
+        markdown_list(
+            task.get("step_by_step_instructions")
+                .unwrap_or(&Value::Null)
+        ),
+        markdown_list(task.get("acceptance_tests").unwrap_or(&Value::Null)),
+        markdown_list(manifest.get("forbidden_files").unwrap_or(&Value::Null))
+    )
+}
+
+fn markdown_list(value: &Value) -> String {
+    value
+        .as_array()
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(|item| format!("- {item}"))
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
+        .filter(|text| !text.is_empty())
+        .unwrap_or_else(|| "- none".to_string())
+}
+
+fn string_array(value: &Value, key: &str) -> DevToolResult<Vec<String>> {
+    value
+        .get(key)
+        .and_then(Value::as_array)
+        .ok_or_else(|| DevToolError::new(format!("{key} must be an array")))?
+        .iter()
+        .map(|item| {
+            item.as_str()
+                .map(str::to_string)
+                .ok_or_else(|| DevToolError::new(format!("{key} entries must be strings")))
+        })
+        .collect()
+}
+
+fn ensure_safe_relative_file(path: &str, label: &str) -> DevToolResult<()> {
+    let relative = Path::new(path);
+    if path.is_empty() || relative.is_absolute() || path.contains('*') {
+        return Err(DevToolError::new(format!(
+            "{label} path must be a plain relative file path"
+        )));
+    }
+    if relative
+        .components()
+        .any(|component| matches!(component, Component::ParentDir | Component::RootDir))
+    {
+        return Err(DevToolError::new(format!(
+            "{label} path must not escape the sandbox"
+        )));
+    }
+    Ok(())
+}
+
+fn patch_paths(patch: &str) -> Vec<String> {
+    let mut paths = BTreeSet::new();
+    for line in patch.lines() {
+        if let Some(rest) = line.strip_prefix("diff --git ") {
+            for part in rest.split_whitespace().take(2) {
+                if let Some(path) = strip_patch_prefix(part) {
+                    paths.insert(path);
+                }
+            }
+        } else if let Some(rest) = line.strip_prefix("--- ") {
+            if let Some(part) = rest.split_whitespace().next() {
+                if let Some(path) = strip_patch_prefix(part) {
+                    paths.insert(path);
+                }
+            }
+        } else if let Some(rest) = line.strip_prefix("+++ ") {
+            if let Some(part) = rest.split_whitespace().next() {
+                if let Some(path) = strip_patch_prefix(part) {
+                    paths.insert(path);
+                }
+            }
+        }
+    }
+    paths.into_iter().collect()
+}
+
+fn strip_patch_prefix(path: &str) -> Option<String> {
+    if path == "/dev/null" {
+        return None;
+    }
+    path.strip_prefix("a/")
+        .or_else(|| path.strip_prefix("b/"))
+        .or(Some(path))
+        .map(str::to_string)
+}
+
+fn forbidden_match(pattern: &str, path: &str) -> bool {
+    if let Some(prefix) = pattern.strip_suffix("/**") {
+        path == prefix || path.starts_with(&format!("{prefix}/"))
+    } else {
+        pattern == path
+    }
 }
 
 fn hash_json(value: &Value) -> DevToolResult<String> {
