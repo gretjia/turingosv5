@@ -99,7 +99,7 @@ fn write_json(path: &Path, value: &Value) {
     .expect("json file should be written");
 }
 
-fn task_payload(atom_id: &str, task_packet: &str) -> Value {
+fn task_payload(atom_id: &str, task_packet: &str, acceptance_tests: Vec<&str>) -> Value {
     json!({
         "atom_id": atom_id,
         "title": "Submit sandbox patch",
@@ -118,13 +118,17 @@ fn task_payload(atom_id: &str, task_packet: &str) -> Value {
         "allowed_files": ["docs/allowed.md"],
         "forbidden_files": ["src/runtime/**"],
         "task_packet": task_packet,
-        "acceptance_criteria": ["git diff --check"],
+        "acceptance_tests": acceptance_tests.clone(),
+        "acceptance_criteria": acceptance_tests,
         "duplicate_policy": "first_valid_claim_wins",
         "blockers": []
     })
 }
 
-fn setup_claimed_sandbox(name: &str) -> (PathBuf, PathBuf, PathBuf, PathBuf, String) {
+fn setup_claimed_sandbox(
+    name: &str,
+    acceptance_tests: Vec<&str>,
+) -> (PathBuf, PathBuf, PathBuf, PathBuf, String) {
     let dir = temp_path(name);
     let store = dir.join("events.jsonl");
     let repo = dir.join("repo");
@@ -149,13 +153,16 @@ fn setup_claimed_sandbox(name: &str) -> (PathBuf, PathBuf, PathBuf, PathBuf, Str
     );
 
     let task_packet = format!("docs/harness/broadcast/tasks/{atom}.r1.task.json");
-    write_json(&repo.join(&task_packet), &task_payload(&atom, &task_packet));
+    write_json(
+        &repo.join(&task_packet),
+        &task_payload(&atom, &task_packet, acceptance_tests.clone()),
+    );
     let created = append(
         &store,
         "submit-created",
         "DevTaskCreated",
         None,
-        task_payload(&atom, &task_packet),
+        task_payload(&atom, &task_packet, acceptance_tests),
     );
     append(
         &store,
@@ -192,7 +199,8 @@ fn setup_claimed_sandbox(name: &str) -> (PathBuf, PathBuf, PathBuf, PathBuf, Str
 
 #[test]
 fn worker_sandbox_submit_commits_patch_in_isolated_worktree_and_records_report() {
-    let (dir, store, repo, sandbox, atom) = setup_claimed_sandbox("commit");
+    let (dir, store, repo, sandbox, atom) =
+        setup_claimed_sandbox("commit", vec!["test -f docs/allowed.md"]);
     fs::write(
         sandbox.join("submit/candidate.patch"),
         "diff --git a/docs/allowed.md b/docs/allowed.md\n--- a/docs/allowed.md\n+++ b/docs/allowed.md\n@@ -1 +1 @@\n-before\n+after\n",
@@ -255,6 +263,11 @@ fn worker_sandbox_submit_commits_patch_in_isolated_worktree_and_records_report()
     assert_eq!(report.payload["worker_slot"], "worker-a");
     assert_eq!(report.payload["submission_commit_created"], true);
     assert_eq!(report.payload["pr_creation"], "not_requested");
+    assert_eq!(
+        report.payload["local_gates"][0]["cmd"],
+        "test -f docs/allowed.md"
+    );
+    assert_eq!(report.payload["local_gates"][0]["status"], "pass");
 
     let board = derive_board(&store).expect("board should derive");
     let row = board["tasks"]
@@ -277,7 +290,11 @@ fn worker_sandbox_submit_requires_existing_task_claim() {
     fs::write(repo.join("docs/allowed.md"), "before\n").expect("allowed file should exist");
     write_json(
         &dir.join("task.json"),
-        &task_payload("V5-SUBMIT-NO-CLAIM-001", "task.json"),
+        &task_payload(
+            "V5-SUBMIT-NO-CLAIM-001",
+            "task.json",
+            vec!["git diff --check"],
+        ),
     );
     let output = Command::new(bin())
         .args([
@@ -327,4 +344,49 @@ fn worker_sandbox_submit_requires_existing_task_claim() {
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("missing TaskClaimed"));
     assert!(!dir.join("worktrees").exists());
+}
+
+#[test]
+fn worker_sandbox_submit_rejects_failed_acceptance_gate_before_recording_report() {
+    let (dir, store, repo, sandbox, _atom) =
+        setup_claimed_sandbox("failed-gate", vec!["test -f docs/missing.md"]);
+    fs::write(
+        sandbox.join("submit/candidate.patch"),
+        "diff --git a/docs/allowed.md b/docs/allowed.md\n--- a/docs/allowed.md\n+++ b/docs/allowed.md\n@@ -1 +1 @@\n-before\n+after\n",
+    )
+    .expect("patch should be written");
+    fs::write(
+        sandbox.join("submit/WorkerReport.json"),
+        r#"{"worker_halt_confirmation":"[WORKER_HALT]","tests_run":[]}"#,
+    )
+    .expect("report should be written");
+
+    let output = Command::new(bin())
+        .args([
+            "worker",
+            "sandbox",
+            "submit",
+            "--dir",
+            sandbox.to_str().expect("utf8 sandbox"),
+            "--store",
+            store.to_str().expect("utf8 store"),
+            "--repo",
+            repo.to_str().expect("utf8 repo"),
+            "--worktree-root",
+            dir.join("worktrees").to_str().expect("utf8 worktree root"),
+            "--worker",
+            "worker-a",
+        ])
+        .output()
+        .expect("sandbox submit should run");
+
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("local gate failed"));
+    let records = read_records(&store).expect("records should read");
+    assert!(
+        records
+            .iter()
+            .all(|record| record.envelope["event_type"] != "WorkerReportSubmitted"),
+        "failed local gate must not record WorkerReportSubmitted"
+    );
 }
