@@ -285,6 +285,138 @@ fn board_projection_removes_superseded_tasks_from_active_board() {
 }
 
 #[test]
+fn board_projection_replays_pr_merged_as_terminal_task_state() {
+    let dir = temp_path("pr-merged");
+    fs::create_dir_all(&dir).expect("temp dir should be created");
+    let store = dir.join("events.jsonl");
+    let atom = "V5-STRESS-DUPLICATE-CLAIM-001";
+
+    let e1 = append(&store, "e1", "DevTaskCreated", None, task_payload(atom));
+    let e2 = append(
+        &store,
+        "e2",
+        "TaskBroadcasted",
+        Some(e1),
+        json!({"atom_id": atom}),
+    );
+    let e3 = append(
+        &store,
+        "e3",
+        "TaskClaimed",
+        Some(e2),
+        json!({
+            "atom_id": atom,
+            "pr_number": 7,
+            "claim_pr_url": "https://github.com/gretjia/turingosv5/pull/7",
+            "createdAt": "2026-05-20T00:00:00Z"
+        }),
+    );
+    let e4 = append(
+        &store,
+        "e4",
+        "WorkerReportSubmitted",
+        Some(e3),
+        json!({
+            "atom_id": atom,
+            "pr_number": 7,
+            "worker_halt_confirmation": "[WORKER_HALT]"
+        }),
+    );
+    let e5 = append(
+        &store,
+        "e5",
+        "AuditVerdictSubmitted",
+        Some(e4),
+        json!({"atom_id": atom, "pr_number": 7, "verdict": "PASS"}),
+    );
+    let e6 = append(
+        &store,
+        "e6",
+        "VetoVerdictSubmitted",
+        Some(e5),
+        json!({"atom_id": atom, "pr_number": 7, "verdict": "PASS"}),
+    );
+    let e7 = append(
+        &store,
+        "e7",
+        "MergeDecisionRecorded",
+        Some(e6),
+        json!({
+            "atom_id": atom,
+            "pr_number": 7,
+            "decision": "PROCEED",
+            "required_ci_passed": true,
+            "audit_passed": true,
+            "veto_passed": true,
+            "conversation_resolution": true,
+            "branch_protection_snapshot": "sha256:branch0001",
+            "merge_state_status": "CLEAN"
+        }),
+    );
+
+    let ready_board = derive_board(&store).expect("board should derive before merge");
+    let ready_row = ready_board["tasks"]
+        .as_array()
+        .expect("tasks")
+        .iter()
+        .find(|task| task["atom_id"] == atom)
+        .expect("task row");
+    assert_eq!(
+        ready_row["status"], "pr_open",
+        "MergeDecisionRecorded(PROCEED) is not a merge"
+    );
+    assert_eq!(ready_row["merge_decision"], "PROCEED");
+
+    let merged_event = append(
+        &store,
+        "e8",
+        "PRMerged",
+        Some(e7),
+        json!({
+            "atom_id": atom,
+            "pr_number": 7,
+            "pr_url": "https://github.com/gretjia/turingosv5/pull/7",
+            "merge_method": "squash",
+            "main_after": "ee698bf6fb69dbf9c1dd1b990aa22c8bff0c6673",
+            "merge_commit_sha": "ee698bf6fb69dbf9c1dd1b990aa22c8bff0c6673",
+            "merge_decision_cid": "sha256:merge0001"
+        }),
+    );
+
+    let merged_board = derive_board(&store).expect("board should derive after merge");
+    let merged_row = merged_board["tasks"]
+        .as_array()
+        .expect("tasks")
+        .iter()
+        .find(|task| task["atom_id"] == atom)
+        .expect("task row");
+    assert_eq!(merged_row["status"], "merged");
+    assert_eq!(merged_row["pr_number"], 7);
+    assert_eq!(
+        merged_row["merge_commit_sha"],
+        "ee698bf6fb69dbf9c1dd1b990aa22c8bff0c6673"
+    );
+    assert_eq!(
+        merged_row["main_after"],
+        "ee698bf6fb69dbf9c1dd1b990aa22c8bff0c6673"
+    );
+    assert!(
+        merged_row["source_event_cids"]
+            .as_array()
+            .expect("source event cids")
+            .iter()
+            .any(|cid| cid == &json!(merged_event)),
+        "PRMerged record hash must be replay evidence for the merged row"
+    );
+
+    let rederived_board = derive_board(&store).expect("board should rederive");
+    assert_eq!(
+        merged_board, rederived_board,
+        "merged state must be rebuildable from DevTape alone"
+    );
+}
+
+#[test]
 fn merge_check_requires_claim_report_audit_veto_ci_and_branch_protection() {
     let dir = temp_path("merge");
     fs::create_dir_all(&dir).expect("temp dir should be created");
