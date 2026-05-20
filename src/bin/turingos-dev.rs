@@ -656,13 +656,7 @@ fn followup_already_recorded(
         record.envelope["event_type"].as_str() == Some(event_type)
             && record.payload.get("pr_number") == payload.get("pr_number")
             && record.payload.get("atom_id") == payload.get("atom_id")
-            && record
-                .payload
-                .get("source_action")
-                .and_then(|source| source.get("action"))
-                == payload
-                    .get("source_action")
-                    .and_then(|source| source.get("action"))
+            && record.payload.get("source_action") == payload.get("source_action")
     })
 }
 
