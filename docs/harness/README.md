@@ -30,6 +30,8 @@ that explicitly require it.
 - `AGENTS.md`: shared cross-agent contract.
 - `docs/harness/roles/**`: role-specific entry points.
 - `docs/harness/META_HARNESS.md`: Meta duties and prohibitions.
+- `docs/harness/META_META_AI_BOUNDARY.md`: outer supervisor boundary; the
+  outer assistant is Meta-MetaAI, not the in-system MetaAI.
 - `docs/harness/WORKER_HARNESS.md`: worker task loop.
 - `docs/harness/TASK_BROADCAST_POLICY.md`: task market rules.
 - `docs/harness/boot_prompts/remote_worker_market.md`: GitHub-only worker entry.
