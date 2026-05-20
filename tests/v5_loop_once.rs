@@ -568,6 +568,105 @@ fn loop_once_records_deterministic_gate_evidence_for_merge_check() {
 }
 
 #[test]
+fn loop_once_records_new_merge_decision_when_pr_gate_state_changes() {
+    let dir = temp_path("gate-state-change");
+    fs::create_dir_all(&dir).expect("temp dir should be created");
+    let store = dir.join("events.jsonl");
+    let board = dir.join("TASK_BOARD.json");
+    let prs = dir.join("prs.json");
+    let atom = "V5-LOOP-GATE-STATE-CHANGE";
+    let tip = seed_task(&store, atom, "open", None, None);
+    let tip = append(
+        &store,
+        "claim",
+        "TaskClaimed",
+        Some(tip),
+        json!({
+            "atom_id": atom,
+            "pr_number": 45,
+            "claim_pr_url": "https://github.com/gretjia/turingosv5/pull/45",
+            "createdAt": "2026-05-20T08:35:56Z"
+        }),
+    );
+    append(
+        &store,
+        "report",
+        "WorkerReportSubmitted",
+        Some(tip),
+        json!({
+            "atom_id": atom,
+            "pr_number": 45,
+            "worker_halt_confirmation": "[WORKER_HALT]"
+        }),
+    );
+
+    let mut pr = json!({
+        "number": 45,
+        "title": "[CLAIM][V5-LOOP-GATE-STATE-CHANGE][Class1] Worker claim",
+        "state": "OPEN",
+        "isDraft": false,
+        "createdAt": "2026-05-20T08:35:56Z",
+        "mergedAt": null,
+        "url": "https://github.com/gretjia/turingosv5/pull/45",
+        "body": "ClaimRecord\n- atom_id: V5-LOOP-GATE-STATE-CHANGE\n\nWorkerReport\n- worker_halt_confirmation: \"[WORKER_HALT]\"\n",
+        "mergeStateStatus": "BLOCKED",
+        "reviewDecision": "REVIEW_REQUIRED",
+        "files": [{"path": "docs/allowed.md"}],
+        "statusCheckRollup": [{"name": "ci-basic", "conclusion": "SUCCESS"}]
+    });
+    write_json(&prs, &json!([pr.clone()]));
+    let first = Command::new(bin())
+        .args([
+            "loop",
+            "once",
+            "--store",
+            store.to_str().expect("utf8 store"),
+            "--board-out",
+            board.to_str().expect("utf8 board"),
+            "--prs-file",
+            prs.to_str().expect("utf8 prs"),
+        ])
+        .output()
+        .expect("loop once should run");
+    assert!(first.status.success());
+
+    pr["mergeStateStatus"] = json!("CLEAN");
+    pr["reviewDecision"] = json!("APPROVED");
+    write_json(&prs, &json!([pr]));
+    let second = Command::new(bin())
+        .args([
+            "loop",
+            "once",
+            "--store",
+            store.to_str().expect("utf8 store"),
+            "--board-out",
+            board.to_str().expect("utf8 board"),
+            "--prs-file",
+            prs.to_str().expect("utf8 prs"),
+        ])
+        .output()
+        .expect("second loop once should run");
+    assert!(
+        second.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&second.stderr)
+    );
+
+    let records = read_records(&store).expect("records should read");
+    let decisions: Vec<&Value> = records
+        .iter()
+        .filter(|record| {
+            record.envelope["event_type"] == "MergeDecisionRecorded"
+                && record.payload["pr_number"] == 45
+        })
+        .map(|record| &record.payload)
+        .collect();
+    assert_eq!(decisions.len(), 2);
+    assert_eq!(decisions[0]["decision"], "HOLD");
+    assert_eq!(decisions[1]["decision"], "PROCEED");
+}
+
+#[test]
 fn loop_once_overwrites_manual_board_projection_from_devtape() {
     let dir = temp_path("board-rederive");
     fs::create_dir_all(&dir).expect("temp dir should be created");
