@@ -112,6 +112,11 @@ git sparse-checkout set --no-cone \
   /docs/harness/broadcast/TASK_BOARD.json \
   "$TASK_PACKET"
 
+# Fresh external clients may not have a machine-level Git identity. Configure
+# only this repository, never global Git config.
+git config user.name "${GIT_AUTHOR_NAME:-TuringOS WorkerAI}"
+git config user.email "${GIT_AUTHOR_EMAIL:-$WORKER_SLOT@users.noreply.github.com}"
+
 git switch -c "$BRANCH"
 git commit --allow-empty -m "Claim $ATOM_ID"
 git push -u origin "$BRANCH"

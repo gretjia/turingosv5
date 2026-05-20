@@ -747,6 +747,36 @@ fn remote_worker_prompt_is_api_first_before_checkout() {
 }
 
 #[test]
+fn remote_worker_prompt_sets_repo_local_git_identity() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("git config user.name") && prompt.contains("git config user.email"),
+        "fresh external workers need repo-local git author identity before claim commit"
+    );
+    assert!(
+        prompt.contains("TuringOS WorkerAI")
+            && prompt.contains("$WORKER_SLOT@users.noreply.github.com"),
+        "remote prompt must provide deterministic neutral WorkerAI identity defaults"
+    );
+    assert!(
+        !prompt.contains("git config --global"),
+        "remote prompt must not mutate the worker machine's global git config"
+    );
+    let identity = prompt
+        .find("git config user.name")
+        .expect("git identity setup must exist");
+    let commit = prompt
+        .find("git commit --allow-empty")
+        .expect("claim commit must exist");
+    assert!(
+        identity < commit,
+        "git identity must be configured before the claim commit"
+    );
+}
+
+#[test]
 fn task_broadcast_policy_names_market_then_sandbox_phases() {
     let root = repo_root();
     let policy = read_text(root.join("docs/harness/TASK_BROADCAST_POLICY.md"));
