@@ -31,7 +31,7 @@ Primary WorkerAI task code is submitted through a generated soft sandbox:
 9. Modify no repo files directly. Write only `submit/candidate.patch` and
    `submit/WorkerReport.json` inside the sandbox.
 10. Submit through:
-   `turingos-dev worker sandbox submit --dir <sandbox> --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --worktree-root /home/zephryj/projects/turingosv5-worktrees --worker <worker_slot>`.
+   `turingos-dev worker sandbox submit --dir <sandbox> --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --worktree-root /home/zephryj/projects/turingosv5-worktrees --worker <worker_slot> --create-pr`.
 11. Output `[WORKER_HALT]`.
 12. Stop the current task.
 
