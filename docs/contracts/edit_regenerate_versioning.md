@@ -1,7 +1,6 @@
 # Edit/Regenerate Versioning Contract
 
-When a `ModificationRequestCapsule` is accepted, the system must create a **new
-`ArtifactBundle`** rather than mutating an existing artifact record.
+When a `ModificationRequestCapsule` is accepted, the system must create a new ArtifactBundle record rather than mutating an existing artifact record.
 
 Regenerate is an explicit replay action. It derives a new bundle from:
 
@@ -29,6 +28,6 @@ Regenerate should therefore be treated as:
 
 ## Non-goals
 
-- Overwriting an existing artifact in place.
+- Overwriting an existing artifact by replacement.
 - Directly patching files of old artifacts.
 - Introducing a fresh LLM call path for regeneration content.

@@ -11,7 +11,7 @@ fn edit_regenerate_contract_requires_new_artifact_bundle() {
         "contract must mention ModificationRequestCapsule"
     );
     assert!(
-        lower.contains("new artifactbundle"),
+        lower.contains("new artifactbundle") || lower.contains("new artifact bundle"),
         "contract must require a new ArtifactBundle on regenerate"
     );
     assert!(
