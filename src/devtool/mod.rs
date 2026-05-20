@@ -97,6 +97,7 @@ const EVENT_TYPES: &[&str] = &[
     "HumanIntentReceived",
     "DevTaskCreated",
     "TaskBroadcasted",
+    "TaskSuperseded",
     "TaskClaimed",
     "WorkerReportSubmitted",
     "AuditVerdictSubmitted",
@@ -704,6 +705,15 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
                 if broadcasted.insert(atom_id.clone()) {
                     broadcast_order.push(atom_id.clone());
                 }
+                source_hashes
+                    .entry(atom_id)
+                    .or_default()
+                    .push(record.record_hash.clone());
+            }
+            "TaskSuperseded" => {
+                let atom_id = payload_string(record, "atom_id")?;
+                tasks.remove(&atom_id);
+                broadcasted.remove(&atom_id);
                 source_hashes
                     .entry(atom_id)
                     .or_default()

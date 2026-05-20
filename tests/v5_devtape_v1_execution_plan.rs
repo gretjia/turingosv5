@@ -53,28 +53,35 @@ fn core_dev_flow_names_architectural_data_shapes() {
 #[test]
 fn task_board_contains_devtape_v1_wave() {
     let board = read_json("docs/harness/broadcast/TASK_BOARD.json");
-    assert_eq!(board["source"], "TuringOS V5 DevTape v1.0 final preflight");
+    assert_eq!(board["source"], "devtape_derived");
+    assert!(board["source_event_cids"]
+        .as_array()
+        .is_some_and(|events| !events.is_empty()));
     let tasks = board["tasks"].as_array().expect("tasks must be an array");
     for atom_id in [
-        "V5-SYS-A0-ARCH-PIN-001",
-        "V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001",
-        "V5-SYS-A2-WORKBENCH-BOUNDARY-001",
-        "V5-SYS-A3-CHARACTERIZATION-SEEDS-001",
-        "V5-SYS-A4-MICRO-DEVTAPE-001",
-        "V5-SYS-A5-DERIVED-BOARD-PROJECTOR-001",
-        "V5-SYS-A6-CLI-INTAKE-WRAPPER-001",
-        "V5-SYS-A7-REUSE-PORT-CONTRACT-001",
-        "V5-SYS-A8-GITHUB-EVIDENCE-SNAPSHOT-001",
-        "V5-SYS-A9-ACTIVE-MERGE-GATE-001",
-        "V5-SYS-A10-HARNESS-THINNING-001",
-        "V5-SYS-A11-AUDIT-VETO-001",
+        "V5-K0-C0-REALITY-MAP-HARD-GATE-001",
+        "V5-K0-C1-PATH-DECISION-CHRONOLOGY-001",
+        "V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001",
+        "V5-K1-C3-LLM-CALL-EVIDENCE-INVENTORY-001",
+        "V5-K2-C4-ARTIFACT-BUNDLE-CONTRACT-001",
+        "V5-K3-C5-PREVIEW-TRUTH-PATH-CONTRACT-001",
+        "V5-K4-C6-BUILD-SESSION-DERIVED-VIEW-001",
+        "V5-K4-C7-FRIENDLY-ERROR-L4E-CONTRACT-001",
+        "V5-K4-C8-SINGLE-URL-MVP-CONTRACT-001",
+        "V5-K5-C9-EDIT-REGENERATE-VERSIONING-001",
+        "V5-K6-C10-SPEC-DERIVED-TESTRUN-001",
+        "V5-K7-C11-AUDIT-PACKET-CONTRACT-001",
     ] {
         let task = tasks
             .iter()
             .find(|task| task["atom_id"] == atom_id)
             .unwrap_or_else(|| panic!("board missing {atom_id}"));
-        assert_eq!(task["phase"], "V5-SYS");
         assert_eq!(task["revision"], 1);
+        assert_eq!(task["claim_required"], true);
+        assert_eq!(task["claim_method"], "draft_pr");
+        assert!(task["source_event_cids"]
+            .as_array()
+            .is_some_and(|events| events.len() >= 2));
         assert!(task["task_packet"]
             .as_str()
             .is_some_and(|path| path.contains(atom_id)));
@@ -85,15 +92,20 @@ fn task_board_contains_devtape_v1_wave() {
 fn task_board_keeps_architect_skill_meta_only() {
     let board = read_json("docs/harness/broadcast/TASK_BOARD.json");
     let tasks = board["tasks"].as_array().expect("tasks must be an array");
-    let a0 = tasks
+    let c0 = tasks
         .iter()
-        .find(|task| task["atom_id"] == "V5-SYS-A0-ARCH-PIN-001")
-        .expect("A0 must exist");
-    assert_eq!(a0["self_select"], false);
-    assert_eq!(a0["claim_mode"], "direct_assignment");
-    assert_eq!(a0["required_capabilities"][0], "architecture");
+        .find(|task| task["atom_id"] == "V5-K0-C0-REALITY-MAP-HARD-GATE-001")
+        .expect("C0 must exist");
+    assert_eq!(c0["self_select"], true);
+    assert_eq!(c0["claim_mode"], "open_pool");
+    assert_eq!(c0["required_capabilities"][0], "docs");
 
     let task_packet_template = read_text("docs/harness/templates/TaskPacket.md");
     assert!(!task_packet_template.contains("KARPATHY_ARCHITECT.md"));
     assert!(task_packet_template.contains("KARPATHY_SIMPLE_CODE.md"));
+
+    let task_packet =
+        read_text("docs/harness/broadcast/tasks/V5-K0-C0-REALITY-MAP-HARD-GATE-001.r1.task.json");
+    assert!(!task_packet.contains("KARPATHY_ARCHITECT.md"));
+    assert!(task_packet.contains("KARPATHY_SIMPLE_CODE.md"));
 }

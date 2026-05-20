@@ -241,6 +241,50 @@ fn board_projection_requires_broadcast_and_reports_manual_drift() {
 }
 
 #[test]
+fn board_projection_removes_superseded_tasks_from_active_board() {
+    let dir = temp_path("superseded");
+    fs::create_dir_all(&dir).expect("temp dir should be created");
+    let store = dir.join("events.jsonl");
+
+    let created = append(
+        &store,
+        "e1",
+        "DevTaskCreated",
+        None,
+        task_payload("V5-LEGACY-DIRECT-001"),
+    );
+    let broadcasted = append(
+        &store,
+        "e2",
+        "TaskBroadcasted",
+        Some(created),
+        json!({"atom_id": "V5-LEGACY-DIRECT-001"}),
+    );
+    let board_before = derive_board(&store).expect("board should derive");
+    assert_eq!(
+        board_before["tasks"].as_array().expect("tasks").len(),
+        1,
+        "broadcasted task should be visible before supersede"
+    );
+
+    append(
+        &store,
+        "e3",
+        "TaskSuperseded",
+        Some(broadcasted),
+        json!({
+            "atom_id": "V5-LEGACY-DIRECT-001",
+            "reason": "replaced by draft-pr claimable task wave"
+        }),
+    );
+    let board_after = derive_board(&store).expect("board should derive");
+    assert!(
+        board_after["tasks"].as_array().expect("tasks").is_empty(),
+        "superseded tasks must not remain claimable on the active board"
+    );
+}
+
+#[test]
 fn merge_check_requires_claim_report_audit_veto_ci_and_branch_protection() {
     let dir = temp_path("merge");
     fs::create_dir_all(&dir).expect("temp dir should be created");

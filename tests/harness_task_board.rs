@@ -413,48 +413,26 @@ fn default_worker_profile_can_claim_at_least_one_open_v1_task() {
 }
 
 #[test]
-fn harness_task_board_publishes_devtape_v1_tasks_and_retires_bootstrap_tasks() {
+fn harness_task_board_publishes_final_taskbook_wave_from_devtape() {
     let root = repo_root();
     let board = read_json(root.join("docs/harness/broadcast/TASK_BOARD.json"));
     let tasks = board["tasks"]
         .as_array()
         .expect("TASK_BOARD.tasks must be an array");
 
-    for atom_id in [
-        "V5-R0-DOCS-001",
-        "V5-R0-HARNESS-001",
-        "V5-R0-QA-001",
-        "V5-H0-HARNESS-JSON-001",
-        "V5-H0-HARNESS-SINGLESHOT-001",
-        "V5-H0-HARNESS-REPAIR-001",
-    ] {
-        let task = tasks
-            .iter()
-            .find(|task| task["atom_id"] == atom_id)
-            .unwrap_or_else(|| panic!("{atom_id} must remain on the board as retired history"));
-        assert_eq!(
-            task["status"], "retired",
-            "{atom_id} must be retired before the DevTape v1.0 wave"
-        );
-    }
+    assert_eq!(board["source"], "devtape_derived");
+    assert!(board["source_event_cids"]
+        .as_array()
+        .is_some_and(|events| !events.is_empty()));
 
     let expected_v1_tasks = [
+        ("V5-K0-C0-REALITY-MAP-HARD-GATE-001", ["docs"].as_slice()),
+        ("V5-K0-C1-PATH-DECISION-CHRONOLOGY-001", ["docs"].as_slice()),
         (
-            "V5-SYS-A0-ARCH-PIN-001",
-            ["architecture", "docs", "meta-governance"].as_slice(),
+            "V5-K1-C2-NO-NEW-SUBSTRATE-REGRESSION-001",
+            ["docs"].as_slice(),
         ),
-        (
-            "V5-SYS-A1-BASELINE-SEMANTIC-CLOSE-001",
-            ["docs", "harness", "policy"].as_slice(),
-        ),
-        (
-            "V5-SYS-A4-MICRO-DEVTAPE-001",
-            ["rust", "devtool", "tests"].as_slice(),
-        ),
-        (
-            "V5-SYS-A10-HARNESS-THINNING-001",
-            ["docs", "harness", "policy"].as_slice(),
-        ),
+        ("V5-STRESS-DUPLICATE-CLAIM-001", ["docs"].as_slice()),
     ];
 
     for (atom_id, capabilities) in expected_v1_tasks {
@@ -472,6 +450,12 @@ fn harness_task_board_publishes_devtape_v1_tasks_and_retires_bootstrap_tasks() {
             task["claim_method"], "draft_pr",
             "{atom_id} must claim by draft PR"
         );
+        assert!(
+            task["source_event_cids"]
+                .as_array()
+                .is_some_and(|events| events.len() >= 2),
+            "{atom_id} must be traceable to DevTaskCreated and TaskBroadcasted"
+        );
         let required = task["required_capabilities"]
             .as_array()
             .unwrap_or_else(|| panic!("{atom_id} must declare required_capabilities"));
@@ -483,14 +467,21 @@ fn harness_task_board_publishes_devtape_v1_tasks_and_retires_bootstrap_tasks() {
         }
     }
 
-    let meta_only = tasks
-        .iter()
-        .find(|task| task["atom_id"] == "V5-SYS-A0-ARCH-PIN-001")
-        .expect("A0 architecture pin must exist");
-    assert_eq!(
-        meta_only["self_select"], false,
-        "A0 is Meta-only and must not be worker self-selectable"
-    );
+    for atom_id in [
+        "V5-K2-C4-ARTIFACT-BUNDLE-CONTRACT-001",
+        "V5-K3-C5-PREVIEW-TRUTH-PATH-CONTRACT-001",
+        "V5-K4-C6-BUILD-SESSION-DERIVED-VIEW-001",
+        "V5-K4-C7-FRIENDLY-ERROR-L4E-CONTRACT-001",
+        "V5-K4-C8-SINGLE-URL-MVP-CONTRACT-001",
+        "V5-K5-C9-EDIT-REGENERATE-VERSIONING-001",
+        "V5-K6-C10-SPEC-DERIVED-TESTRUN-001",
+        "V5-K7-C11-AUDIT-PACKET-CONTRACT-001",
+    ] {
+        assert!(
+            tasks.iter().any(|task| task["atom_id"] == atom_id),
+            "{atom_id} must be published from the final task book"
+        );
+    }
 }
 
 #[test]
