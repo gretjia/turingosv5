@@ -433,7 +433,7 @@ fn harness_task_board_publishes_final_taskbook_wave_from_devtape() {
         ),
         (
             "V5-K0-C1-PATH-DECISION-CHRONOLOGY-001",
-            "open",
+            "pr_open",
             ["docs"].as_slice(),
         ),
         (
@@ -443,6 +443,11 @@ fn harness_task_board_publishes_final_taskbook_wave_from_devtape() {
         ),
         (
             "V5-STRESS-DUPLICATE-CLAIM-001",
+            "merged",
+            ["docs"].as_slice(),
+        ),
+        (
+            "V5-K4-C6-BUILD-SESSION-DERIVED-VIEW-001",
             "merged",
             ["docs"].as_slice(),
         ),
@@ -606,6 +611,217 @@ fn harness_worker_claim_protocol_is_sandbox_first_with_draft_pr_fallback() {
             && task_policy.contains("Race Window")
             && task_policy.contains("live coordination signal"),
         "task broadcast policy must describe board lag and race-safe PR claim coordination"
+    );
+}
+
+#[test]
+fn remote_worker_prompt_preserves_board_self_selection() {
+    let root = repo_root();
+    let prompt_path = root.join("docs/harness/boot_prompts/remote_worker_market.md");
+    assert!(
+        prompt_path.exists(),
+        "remote worker market prompt must exist"
+    );
+    let prompt = read_text(&prompt_path);
+    let lower = prompt.to_ascii_lowercase();
+
+    assert!(
+        prompt.contains("https://github.com/gretjia/turingosv5.git"),
+        "remote prompt must give external clients the GitHub URL"
+    );
+    assert!(
+        lower.contains("self-select") && lower.contains("task board"),
+        "remote prompt must preserve WorkerAI self-selection from the board"
+    );
+    assert!(
+        prompt.contains("gh pr list") && prompt.contains("ATOM_ID"),
+        "remote prompt must overlay open GitHub PR claims before selecting work"
+    );
+    assert!(
+        prompt.contains("git sparse-checkout"),
+        "remote prompt must use sparse checkout instead of full-repo intake"
+    );
+    assert!(
+        prompt.contains("Execution phase") && prompt.contains("allowed_files"),
+        "remote prompt must narrow context only after a task is selected"
+    );
+    assert!(
+        !prompt.contains("/home/zephryj/projects/turingosv5"),
+        "remote prompt must not assume access to the local maintainer checkout"
+    );
+    assert!(
+        !lower.contains("metaai assigns")
+            && !lower.contains("single task package")
+            && !lower.contains("only one task packet from meta"),
+        "remote prompt must not turn the board market into MetaAI task assignment"
+    );
+    assert!(
+        !prompt.contains("Do not modify `TASK_BOARD.json`"),
+        "remote prompt should rely on sparse checkout and allowed_files, not repeated prohibitions"
+    );
+}
+
+#[test]
+fn remote_worker_prompt_has_workspace_gate_sparse_profile() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("Workspace gate context"),
+        "remote prompt must name the expanded context used only for full workspace gates"
+    );
+    for required_path in [
+        "/Cargo.toml",
+        "/Cargo.lock",
+        "'/src/**'",
+        "'/tests/**'",
+        "'/docs/**'",
+        "'/schemas/**'",
+        "/README.md",
+        "/AGENTS.md",
+        "/AGENT_ENTRY.md",
+        "/HARNESS.md",
+        "/CHARTER.md",
+        "/CODEX.md",
+        "/CLAUDE.md",
+        "/GEMINI.md",
+    ] {
+        assert!(
+            prompt.contains(required_path),
+            "workspace gate sparse profile must include {required_path}"
+        );
+    }
+    assert!(
+        prompt.contains("cargo test --workspace"),
+        "workspace gate profile must be tied to cargo test --workspace"
+    );
+}
+
+#[test]
+fn remote_worker_prompt_documents_pr_body_rest_fallback() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("GraphQL") && prompt.contains("Projects"),
+        "remote prompt must document the known gh pr edit GraphQL/Projects failure"
+    );
+    assert!(
+        prompt.contains("gh api -X PATCH")
+            && prompt.contains("\"repos/$REPO_NAME/pulls/$PR_NUMBER\""),
+        "remote prompt must provide REST fallback for PR body updates"
+    );
+}
+
+#[test]
+fn remote_worker_prompt_verifies_ready_state_after_gh_pr_ready() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("gh pr ready \"$PR_NUMBER\"")
+            && prompt.contains("--json isDraft")
+            && prompt.contains("READY_VERIFICATION_FAILED"),
+        "remote prompt must verify GitHub actually cleared draft state after gh pr ready"
+    );
+    let ready = prompt
+        .find("gh pr ready \"$PR_NUMBER\"")
+        .expect("ready command must exist");
+    let verify = prompt
+        .find("--json isDraft")
+        .expect("ready verification must inspect isDraft");
+    assert!(
+        ready < verify,
+        "ready verification must happen after gh pr ready"
+    );
+}
+
+#[test]
+fn remote_worker_prompt_is_api_first_before_checkout() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("API-first Market Phase"),
+        "remote prompt must start market discovery through GitHub API/raw files"
+    );
+    assert!(
+        prompt.contains("repos/$REPO_NAME/contents/")
+            && prompt.contains("docs/harness/broadcast/TASK_BOARD.json"),
+        "remote prompt must fetch board files through the contents API before checkout"
+    );
+    assert!(
+        prompt.contains("git/trees/$REF?recursive=1"),
+        "remote prompt must discover task packets through GitHub tree API"
+    );
+    assert!(
+        prompt.contains("private repositories require authenticated `gh`"),
+        "remote prompt must explain private repository authentication boundary"
+    );
+
+    let market = prompt
+        .find("## API-first Market Phase")
+        .expect("market phase heading must exist");
+    let checkout = prompt
+        .find("## Checkout And Claim Phase")
+        .expect("checkout phase heading must exist");
+    let first_clone = prompt
+        .find("git clone")
+        .expect("remote prompt still needs a clone after task selection");
+
+    assert!(
+        market < checkout && checkout < first_clone,
+        "git clone must happen only after API-first task selection"
+    );
+}
+
+#[test]
+fn remote_worker_prompt_sets_repo_local_git_identity() {
+    let root = repo_root();
+    let prompt = read_text(root.join("docs/harness/boot_prompts/remote_worker_market.md"));
+
+    assert!(
+        prompt.contains("git config user.name") && prompt.contains("git config user.email"),
+        "fresh external workers need repo-local git author identity before claim commit"
+    );
+    assert!(
+        prompt.contains("TuringOS WorkerAI")
+            && prompt.contains("$WORKER_SLOT@users.noreply.github.com"),
+        "remote prompt must provide deterministic neutral WorkerAI identity defaults"
+    );
+    assert!(
+        !prompt.contains("git config --global"),
+        "remote prompt must not mutate the worker machine's global git config"
+    );
+    let identity = prompt
+        .find("git config user.name")
+        .expect("git identity setup must exist");
+    let commit = prompt
+        .find("git commit --allow-empty")
+        .expect("claim commit must exist");
+    assert!(
+        identity < commit,
+        "git identity must be configured before the claim commit"
+    );
+}
+
+#[test]
+fn task_broadcast_policy_names_market_then_sandbox_phases() {
+    let root = repo_root();
+    let policy = read_text(root.join("docs/harness/TASK_BROADCAST_POLICY.md"));
+    let lower = policy.to_ascii_lowercase();
+
+    assert!(
+        lower.contains("public task market"),
+        "task policy must name the board as a public task market"
+    );
+    assert!(
+        policy.contains("Selection phase") && policy.contains("Execution phase"),
+        "task policy must separate board self-selection from sandbox execution"
+    );
+    assert!(
+        policy.contains("GitHub open PR") && policy.contains("claim overlay"),
+        "task policy must require remote workers to overlay live GitHub claims"
     );
 }
 

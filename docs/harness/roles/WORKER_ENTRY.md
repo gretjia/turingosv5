@@ -4,11 +4,16 @@ Use this role entry only when explicitly assigned worker work by the human
 prompt, TaskPacket, or Meta continuation. During H0 smoke, a worker role session
 may self-select exactly one eligible open task from the board.
 
-Begin intake from the main checkout:
+For local maintainer-side workers, begin intake from the main checkout:
 
 ```bash
 cd /home/zephryj/projects/turingosv5
 ```
+
+For external GitHub-only workers that cannot access the maintainer checkout,
+use `docs/harness/boot_prompts/remote_worker_market.md`. External workers still
+self-select from the public board; they are not assigned a single task package
+by MetaAI.
 
 Read in order:
 
