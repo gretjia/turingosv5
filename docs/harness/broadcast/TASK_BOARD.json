@@ -67,7 +67,13 @@
     "sha256:1026fb50665e628913f9cb731cb97dab2bac615841d5f76b153f1c82d06948f1",
     "sha256:e4953646315dfbc27b863354f95cac3080d78df85f3b309408419acdf4da5c89",
     "sha256:c6c4950d98a6eb7c6917cfa2b49a779e5986841049e2c672410f533500aedaa5",
-    "sha256:bfe2b1b7b877006b4a82dada43b4efa3dca2110e71e69d4378102d498b43ac32"
+    "sha256:bfe2b1b7b877006b4a82dada43b4efa3dca2110e71e69d4378102d498b43ac32",
+    "sha256:632e91dfcf63b4f16bb45a7d6493fe8df28dc817d9389b994f035981052bc48f",
+    "sha256:4648963083ab0adf7dfa54f6d32237cc39f8ad1e72229fe26c5b71c8aff13ee7",
+    "sha256:12084f4583dfdedfa96166963e20644618c5e54b7a493e8a0b5be6447854c72d",
+    "sha256:c002680c92ca6cbe30c5f2aebe575f30dac09289eaf63bb248d61cefc75cc25e",
+    "sha256:b197297d65a3e50d26d88fe6adfd1eb37cd0b1bbee0d667a203a078eb5ab3186",
+    "sha256:65ee301e941a219b6866b15f86f31a17ab24cb821ed969ba873e25bc1e01fb03"
   ],
   "tasks": [
     {
@@ -100,15 +106,15 @@
         ".turingos_system/**"
       ],
       "lane": "RealityProof",
-      "main_after": null,
-      "merge_commit_sha": null,
-      "merge_decision": null,
-      "merge_decision_cid": null,
-      "merge_method": null,
+      "main_after": "d2e4ead25594b35536d228c00cc14f34550310c5",
+      "merge_commit_sha": "d2e4ead25594b35536d228c00cc14f34550310c5",
+      "merge_decision": "PROCEED",
+      "merge_decision_cid": "sha256:merge-decision-recorded-pr15-c0",
+      "merge_method": "squash",
       "meta_opened": true,
       "phase": "V5-K0",
-      "pr_number": null,
-      "pr_url": null,
+      "pr_number": 15,
+      "pr_url": "https://github.com/gretjia/turingosv5/pull/15",
       "preferred_capabilities": [
         "audit",
         "harness"
@@ -121,10 +127,14 @@
       "self_select": true,
       "source_event_cids": [
         "sha256:7f551189bf16def926a3c97d39d1b1d9cc7b921aa87c9fd055260fc3e103372e",
-        "sha256:ca720f315276bb5285ec41414bde510380c39b85b537b8325a93315077241b04"
+        "sha256:ca720f315276bb5285ec41414bde510380c39b85b537b8325a93315077241b04",
+        "sha256:632e91dfcf63b4f16bb45a7d6493fe8df28dc817d9389b994f035981052bc48f",
+        "sha256:4648963083ab0adf7dfa54f6d32237cc39f8ad1e72229fe26c5b71c8aff13ee7",
+        "sha256:b197297d65a3e50d26d88fe6adfd1eb37cd0b1bbee0d667a203a078eb5ab3186",
+        "sha256:65ee301e941a219b6866b15f86f31a17ab24cb821ed969ba873e25bc1e01fb03"
       ],
-      "squash_commit_sha": null,
-      "status": "open",
+      "squash_commit_sha": "d2e4ead25594b35536d228c00cc14f34550310c5",
+      "status": "merged",
       "task_packet": "docs/harness/broadcast/tasks/V5-K0-C0-REALITY-MAP-HARD-GATE-001.r1.task.json",
       "title": "Reality Map hard gate from final task book"
     },
