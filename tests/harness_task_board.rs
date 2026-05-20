@@ -563,6 +563,10 @@ fn harness_worker_claim_protocol_is_sandbox_first_with_draft_pr_fallback() {
             "workers must submit sandbox output through TuringOS"
         );
         assert!(
+            text.contains("--create-pr"),
+            "current GitHub-backed worker flow must ask TuringOS to create the PR"
+        );
+        assert!(
             text.contains("submit/candidate.patch") && text.contains("submit/WorkerReport.json"),
             "workers must submit only patch plus WorkerReport"
         );

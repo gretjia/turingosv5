@@ -75,13 +75,15 @@ turingos-dev worker sandbox submit \
   --store .turingos_system/devtape/turingosv5/events.jsonl \
   --repo /home/zephryj/projects/turingosv5 \
   --worktree-root /home/zephryj/projects/turingosv5-worktrees \
-  --worker <worker_slot>
+  --worker <worker_slot> \
+  --create-pr
 ```
 
 `sandbox submit` validates allowed files, requires `[WORKER_HALT]`, applies the
 patch in an isolated worktree, runs local acceptance gates, commits the result,
-and records `WorkerReportSubmitted`. Use `--create-pr` only when the current
-task flow explicitly asks TuringOS to open the external GitHub backup PR.
+opens the external GitHub backup PR for the current development wave, and
+records `WorkerReportSubmitted`. Omit `--create-pr` only for a local dry-run
+where no PR should be created.
 
 Legacy draft PR fallback uses branch:
 

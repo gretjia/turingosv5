@@ -32,7 +32,7 @@ Preferred:
 - `claim_required: true`
 - `claim_method: "sandbox"` by default
 - claim command: `turingos-dev worker claim next --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --out-root /home/zephryj/projects/turingosv5-sandboxes --worker <worker_slot>`
-- submit command: `turingos-dev worker sandbox submit --dir <sandbox> --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --worktree-root /home/zephryj/projects/turingosv5-worktrees --worker <worker_slot>`
+- submit command: `turingos-dev worker sandbox submit --dir <sandbox> --store .turingos_system/devtape/turingosv5/events.jsonl --repo /home/zephryj/projects/turingosv5 --worktree-root /home/zephryj/projects/turingosv5-worktrees --worker <worker_slot> --create-pr`
 - legacy fallback: use draft PR only when this TaskPacket explicitly says `claim_method: "draft_pr"`
 - branch: `work/<atom_id>/<worker_slot>`
 - worktree: `/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>`
