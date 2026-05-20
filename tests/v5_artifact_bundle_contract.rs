@@ -92,7 +92,9 @@ fn artifact_bundle_schema_declares_entrypoint_membership_invariant() {
         .expect("schema must declare deterministic TuringOS invariants");
 
     assert!(
-        invariants.iter().any(|value| value == "entrypoint_must_match_files_path"),
+        invariants
+            .iter()
+            .any(|value| value == "entrypoint_must_match_files_path"),
         "schema must require deterministic validation that entrypoint is one of files[*].path"
     );
 }
