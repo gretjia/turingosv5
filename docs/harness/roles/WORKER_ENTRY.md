@@ -4,11 +4,16 @@ Use this role entry only when explicitly assigned worker work by the human
 prompt, TaskPacket, or Meta continuation. During H0 smoke, a worker role session
 may self-select exactly one eligible open task from the board.
 
-Begin intake from the main checkout:
+For local maintainer-side workers, begin intake from the main checkout:
 
 ```bash
 cd /home/zephryj/projects/turingosv5
 ```
+
+For external GitHub-only workers that cannot access the maintainer checkout,
+use `docs/harness/boot_prompts/remote_worker_market.md`. External workers still
+self-select from the public board; they are not assigned a single task package
+by MetaAI.
 
 Read in order:
 
@@ -18,7 +23,7 @@ Read in order:
 4. `docs/harness/WORKER_HARNESS.md`
 5. `docs/harness/TASK_BROADCAST_POLICY.md`
 6. `docs/harness/broadcast/TASK_BOARD.json`
-7. The selected TaskPacket
+7. The selected TaskPacket or generated sandbox `TASK.md`
 
 ## Worker Profile
 
@@ -31,10 +36,22 @@ It is a smoke harness profile, not tied to any CLI label.
 
 ## Claim Before Code
 
-Workers must claim before implementation. The first durable public signal for a
-task is the draft PR claim, not local edits, local branches, or private notes.
+Workers must claim before implementation. The primary claim path is now
+DevTape-backed sandbox intake:
 
-If a WorkerAI cannot create a draft PR claim, it must not implement the task.
+```bash
+turingos-dev worker claim next \
+  --store .turingos_system/devtape/turingosv5/events.jsonl \
+  --repo /home/zephryj/projects/turingosv5 \
+  --out-root /home/zephryj/projects/turingosv5-sandboxes \
+  --worker <worker_slot>
+```
+
+This appends `TaskClaimed` evidence and creates a soft sandbox. If no eligible
+task exists, stop with `[WORKER_HALT]`.
+
+Legacy draft PR claims remain a compatibility fallback only when a TaskPacket or
+Meta continuation explicitly says `claim_method: "draft_pr"`.
 
 ## Single-Shot Lifecycle
 
@@ -42,35 +59,53 @@ H0 smoke worker role sessions run one task and then stop. Do not run a
 `while true` worker loop, automatic re-entry, or background task scanner during
 this phase.
 
-Task code must be edited only in:
+Primary sandbox task edits happen only through the generated sandbox:
 
 ```text
-/home/zephryj/projects/turingosv5-worktrees/<worker_slot>/<atom_id>
+/home/zephryj/projects/turingosv5-sandboxes/<worker_slot>/<atom_id>
 ```
 
-Create the task branch from latest `origin/main`:
+Read only the sandbox files and write:
+
+```text
+submit/candidate.patch
+submit/WorkerReport.json
+```
+
+Then submit through TuringOS:
+
+```bash
+turingos-dev worker sandbox submit \
+  --dir /home/zephryj/projects/turingosv5-sandboxes/<worker_slot>/<atom_id> \
+  --store .turingos_system/devtape/turingosv5/events.jsonl \
+  --repo /home/zephryj/projects/turingosv5 \
+  --worktree-root /home/zephryj/projects/turingosv5-worktrees \
+  --worker <worker_slot> \
+  --create-pr
+```
+
+`sandbox submit` validates allowed files, requires `[WORKER_HALT]`, applies the
+patch in an isolated worktree, runs local acceptance gates, commits the result,
+opens the external GitHub backup PR for the current development wave, and
+records `WorkerReportSubmitted`. Omit `--create-pr` only for a local dry-run
+where no PR should be created.
+
+Legacy draft PR fallback uses branch:
 
 ```text
 work/<atom_id>/<worker_slot>
 ```
 
-Claim by draft PR titled:
+and PR title:
 
 ```text
 [CLAIM][<atom_id>][ClassX] <task title>
 ```
 
-Before claiming:
+Before legacy draft PR claiming, run `git fetch origin`, validate the board, and
+check open PRs. Skip any atom with an active valid claim.
 
-```bash
-git fetch origin
-jq . docs/harness/broadcast/TASK_BOARD.json
-gh pr list --state open
-```
-
-Skip any atom with an active valid claim.
-
-For the selected atom, use a two-check claim sequence:
+For legacy draft PR fallback, use a two-check claim sequence:
 
 1. Check open PRs before creating the worktree. If any valid claim already
    exists for the atom, skip it.
@@ -91,9 +126,9 @@ The claim PR body must include ClaimRecord, board version/hash, TaskPacket
 path/hash, allowed files, forbidden files, worker profile, and claim timestamp.
 Do not open a separate implementation PR.
 
-Run required tests, update the same PR with WorkerReport, run `gh pr ready`,
-print `[WORKER_HALT]`, and stop. H0 smoke is single-shot; do not start another
-task without a new explicit assignment.
+For sandbox intake, do not hand-edit the board or main checkout. Submit the
+sandbox, print `[WORKER_HALT]`, and stop. H0 smoke is single-shot; do not start
+another task without a new explicit assignment.
 
 ## Eligibility
 
@@ -102,7 +137,8 @@ A task is eligible only if:
 - `status == "open"`
 - `self_select == true`
 - `claim_required == true`
-- `claim_method == "draft_pr"`
+- `claim_method` is compatible with sandbox intake, or explicitly declares
+  legacy `draft_pr` fallback
 - `class <= worker_allowed_class`
 - required capabilities match the worker profile
 - blockers are empty

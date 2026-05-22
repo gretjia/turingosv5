@@ -7,18 +7,22 @@ CLI sessions start unassigned. They read `AGENTS.md` first, then
 `AGENT_ENTRY.md`, then enter a role only when the human prompt, TaskPacket,
 ReviewPacket, or Meta continuation explicitly assigns one.
 
-Worker role sessions do not freely write code. They select one eligible
-TaskPacket from the Task Broadcast, work only inside allowed paths, run the
-required tests, open a PR, submit WorkerReport, and stop.
+Worker role sessions do not freely write code. They first enter the public task
+market, self-select one eligible TaskPacket, claim it, then narrow into the
+selected task's execution context. Local workers use `turingos-dev worker claim
+next`; external GitHub-only workers use
+`docs/harness/boot_prompts/remote_worker_market.md`.
 
 Meta role sessions own the broadcast board, PR reconciliation, review
 coordination, Veto requests, merge decisions, and development evidence
 recording.
 
-Normal distribution is board-first. MetaAI publishes or reconciles the board;
-WorkerAI sessions read the board and claim by draft PR. The board is a
-projection/control view, while the live claim fact is the earliest valid draft
-PR for an atom.
+Normal distribution is DevTape/board-first. MetaAI appends DevEvents and
+derives the board; WorkerAI sessions use that board as a public task market.
+The board is a projection/control view, while live coordination comes from
+`TaskClaimed` evidence for local sandbox workers and GitHub open PR claim
+overlay for remote workers. Draft PR claim remains a legacy fallback for tasks
+that explicitly require it.
 
 ## Files
 
@@ -26,8 +30,11 @@ PR for an atom.
 - `AGENTS.md`: shared cross-agent contract.
 - `docs/harness/roles/**`: role-specific entry points.
 - `docs/harness/META_HARNESS.md`: Meta duties and prohibitions.
+- `docs/harness/META_META_AI_BOUNDARY.md`: outer supervisor boundary; the
+  outer assistant is Meta-MetaAI, not the in-system MetaAI.
 - `docs/harness/WORKER_HARNESS.md`: worker task loop.
 - `docs/harness/TASK_BROADCAST_POLICY.md`: task market rules.
+- `docs/harness/boot_prompts/remote_worker_market.md`: GitHub-only worker entry.
 - `docs/harness/broadcast/TASK_BOARD.json`: Meta-only task board.
 - `docs/harness/schemas/**`: JSON schema contracts.
 - `docs/harness/templates/**`: report and decision templates.

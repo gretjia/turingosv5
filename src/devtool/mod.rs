@@ -5,7 +5,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
+use std::process::Command;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppendInput {
@@ -95,6 +96,11 @@ pub type DevToolResult<T> = Result<T, DevToolError>;
 
 const EVENT_TYPES: &[&str] = &[
     "HumanIntentReceived",
+    "MetaReconcileRecorded",
+    "WorkerFollowupRequested",
+    "BranchUpdateRequested",
+    "DuplicateClaimRecorded",
+    "MergeCheckRequested",
     "DevTaskCreated",
     "TaskBroadcasted",
     "TaskSuperseded",
@@ -348,8 +354,9 @@ pub fn console_frame(store: &Path, show_help: bool) -> DevToolResult<String> {
     lines.push(
         "+ Commands ------------------------------------------------------------+".to_string(),
     );
-    lines
-        .push("| [w] welcome   [r] refresh   [h] help   [q] quit                    |".to_string());
+    lines.push(
+        "| [m] meta reconcile   [w] welcome   [r] refresh   [h] help   [q] quit |".to_string(),
+    );
     if show_help {
         lines.push(
             "+ Help ----------------------------------------------------------------+".to_string(),
@@ -359,6 +366,9 @@ pub fn console_frame(store: &Path, show_help: bool) -> DevToolResult<String> {
         );
         lines.push(
             "| Use turingos-dev event append / board derive for state changes.     |".to_string(),
+        );
+        lines.push(
+            "| Meta reconcile is a one-shot dry-run over board + open PR claims.   |".to_string(),
         );
     }
     lines.push(
@@ -689,6 +699,7 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
     let mut source_hashes: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut broadcast_order = Vec::new();
     let mut broadcasted = BTreeSet::new();
+    let mut pr_atoms: BTreeMap<u64, String> = BTreeMap::new();
 
     for record in &records {
         match event_type(record)?.as_str() {
@@ -721,6 +732,7 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
             }
             "TaskClaimed" => {
                 let atom_id = payload_string(record, "atom_id")?;
+                remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
                 if let Some(task) = tasks.get_mut(&atom_id) {
                     task["status"] = json!("claimed");
                     copy_optional(&record.payload, task, "pr_number");
@@ -732,8 +744,18 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
             }
             "WorkerReportSubmitted" => {
                 let atom_id = payload_string(record, "atom_id")?;
+                remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
                 if let Some(task) = tasks.get_mut(&atom_id) {
-                    task["status"] = json!("pr_open");
+                    task["status"] = if record
+                        .payload
+                        .get("pr_number")
+                        .and_then(Value::as_u64)
+                        .is_some()
+                    {
+                        json!("pr_open")
+                    } else {
+                        json!("submitted")
+                    };
                     copy_optional(&record.payload, task, "pr_number");
                 }
                 source_hashes
@@ -743,8 +765,41 @@ pub fn derive_board(store: &Path) -> DevToolResult<Value> {
             }
             "MergeDecisionRecorded" => {
                 let atom_id = payload_string(record, "atom_id")?;
+                remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
                 if let Some(task) = tasks.get_mut(&atom_id) {
                     copy_as(&record.payload, task, "decision", "merge_decision");
+                }
+                source_hashes
+                    .entry(atom_id)
+                    .or_default()
+                    .push(record.record_hash.clone());
+            }
+            "PRMerged" => {
+                let atom_id = record
+                    .payload
+                    .get("atom_id")
+                    .and_then(Value::as_str)
+                    .map(str::to_string)
+                    .or_else(|| {
+                        record
+                            .payload
+                            .get("pr_number")
+                            .and_then(Value::as_u64)
+                            .and_then(|pr_number| pr_atoms.get(&pr_number).cloned())
+                    });
+                let Some(atom_id) = atom_id else {
+                    continue;
+                };
+                remember_pr_atom(&record.payload, &atom_id, &mut pr_atoms);
+                if let Some(task) = tasks.get_mut(&atom_id) {
+                    task["status"] = json!("merged");
+                    copy_optional(&record.payload, task, "pr_number");
+                    copy_optional(&record.payload, task, "pr_url");
+                    copy_optional(&record.payload, task, "merge_method");
+                    copy_optional(&record.payload, task, "main_after");
+                    copy_optional(&record.payload, task, "merge_commit_sha");
+                    copy_optional(&record.payload, task, "squash_commit_sha");
+                    copy_optional(&record.payload, task, "merge_decision_cid");
                 }
                 source_hashes
                     .entry(atom_id)
@@ -977,6 +1032,221 @@ pub fn merge_check(store: &Path, pr_number: u64) -> DevToolResult<MergeGateResul
     }
 }
 
+pub fn meta_reconcile_report(board: &Value, prs: &Value) -> DevToolResult<Value> {
+    let tasks = board
+        .get("tasks")
+        .and_then(Value::as_array)
+        .ok_or_else(|| DevToolError::new("board.tasks must be an array"))?;
+    let prs = prs
+        .as_array()
+        .ok_or_else(|| DevToolError::new("prs must be an array"))?;
+
+    let mut task_status: BTreeMap<String, String> = BTreeMap::new();
+    let mut open_task_atoms = Vec::new();
+    for task in tasks {
+        let atom = task.get("atom_id").and_then(Value::as_str).unwrap_or("");
+        if atom.is_empty() {
+            continue;
+        }
+        let status = task.get("status").and_then(Value::as_str).unwrap_or("open");
+        task_status.insert(atom.to_string(), status.to_string());
+        if status == "open" {
+            open_task_atoms.push(Value::String(atom.to_string()));
+        }
+    }
+
+    let mut claims: BTreeMap<String, Vec<&Value>> = BTreeMap::new();
+    let mut actions = Vec::new();
+    for pr in prs {
+        if let Some(atom) = claim_atom(pr) {
+            claims.entry(atom).or_default().push(pr);
+        } else {
+            actions.push(pr_action(pr, None, Value::Null, "orphan_pr", false));
+        }
+    }
+
+    for (atom, mut atom_prs) in claims {
+        atom_prs.sort_by_key(|pr| pr_string(pr, "createdAt"));
+        for (index, pr) in atom_prs.iter().enumerate() {
+            let status = task_status.get(&atom).map(String::as_str);
+            let task = tasks
+                .iter()
+                .find(|task| task.get("atom_id").and_then(Value::as_str) == Some(atom.as_str()));
+            let needs_report = !has_worker_report(pr);
+            let action = if matches!(
+                status,
+                Some("merged") | Some("superseded") | Some("retired")
+            ) {
+                "supersede_closed_task_claim"
+            } else if pr_string(pr, "state") == "MERGED" {
+                "record_pr_merged"
+            } else if index > 0 {
+                "supersede_duplicate_claim"
+            } else if pr_string(pr, "mergeStateStatus").eq_ignore_ascii_case("DIRTY") {
+                "hold_dirty_claim"
+            } else if status == Some("pr_open") && !needs_report && has_failed_check(pr) {
+                "hold_failed_ci"
+            } else if status == Some("pr_open")
+                && !needs_report
+                && pr_string(pr, "mergeStateStatus") == "BEHIND"
+            {
+                "hold_until_branch_updated"
+            } else if status == Some("pr_open") && !needs_report {
+                "run_merge_check"
+            } else if status == Some("claimed") && needs_report {
+                "await_worker_report"
+            } else if needs_report {
+                "record_task_claim"
+            } else {
+                "record_worker_report"
+            };
+            actions.push(pr_action(
+                pr,
+                task,
+                Value::String(atom.clone()),
+                action,
+                needs_report,
+            ));
+        }
+    }
+
+    Ok(json!({
+        "mode": "dry-run",
+        "scanned_prs": prs.len(),
+        "open_task_atoms": open_task_atoms,
+        "actions": actions
+    }))
+}
+
+pub fn create_worker_sandbox(task: &Value, repo: &Path, out: &Path) -> DevToolResult<Value> {
+    if out.exists() {
+        return Err(DevToolError::new("worker sandbox output already exists"));
+    }
+    let atom_id = task
+        .get("atom_id")
+        .and_then(Value::as_str)
+        .ok_or_else(|| DevToolError::new("task.atom_id must be a string"))?;
+    let allowed_files = string_array(task, "allowed_files")?;
+    let forbidden_files = string_array(task, "forbidden_files")?;
+    for path in &allowed_files {
+        ensure_safe_relative_file(path, "allowed_files")?;
+    }
+
+    fs::create_dir_all(out.join("allowed_files")).map_err(io_error)?;
+    fs::create_dir_all(out.join("submit")).map_err(io_error)?;
+    for path in &allowed_files {
+        let source = repo.join(path);
+        if source.is_file() {
+            let destination = out.join("allowed_files").join(path);
+            if let Some(parent) = destination.parent() {
+                fs::create_dir_all(parent).map_err(io_error)?;
+            }
+            fs::copy(source, destination).map_err(io_error)?;
+        }
+    }
+
+    let manifest = json!({
+        "schema": "turingos.v5.worker_sandbox.v0",
+        "atom_id": atom_id,
+        "runtime_truth": false,
+        "soft_sandbox": true,
+        "allowed_files": allowed_files,
+        "forbidden_files": forbidden_files,
+        "acceptance_tests": task
+            .get("acceptance_tests")
+            .or_else(|| task.get("acceptance_criteria"))
+            .cloned()
+            .unwrap_or_else(|| json!(["git diff --check"])),
+        "submit_contract": {
+            "candidate_patch": "submit/candidate.patch",
+            "worker_report": "submit/WorkerReport.json",
+            "halt_required": "[WORKER_HALT]"
+        }
+    });
+    fs::write(
+        out.join("sandbox_manifest.json"),
+        serde_json::to_vec_pretty(&manifest).map_err(json_error)?,
+    )
+    .map_err(io_error)?;
+    fs::write(out.join("TASK.md"), worker_task_text(task, &manifest)).map_err(io_error)?;
+    fs::write(out.join("CONTEXT.md"), worker_context_text(task, &manifest)).map_err(io_error)?;
+    Ok(manifest)
+}
+
+pub fn validate_worker_sandbox_submission(dir: &Path) -> DevToolResult<Value> {
+    let manifest_path = dir.join("sandbox_manifest.json");
+    let manifest: Value =
+        serde_json::from_slice(&fs::read(manifest_path).map_err(io_error)?).map_err(json_error)?;
+    let allowed_files = string_array(&manifest, "allowed_files")?;
+    let forbidden_files = string_array(&manifest, "forbidden_files")?;
+    let patch_path = dir.join("submit/candidate.patch");
+    let report_path = dir.join("submit/WorkerReport.json");
+    let patch = fs::read_to_string(&patch_path).map_err(io_error)?;
+    let report = fs::read_to_string(&report_path).map_err(io_error)?;
+    if !report.contains("[WORKER_HALT]") {
+        return Err(DevToolError::new(
+            "WorkerReport.json must contain [WORKER_HALT]",
+        ));
+    }
+
+    let paths = patch_paths(&patch);
+    if paths.is_empty() {
+        return Err(DevToolError::new("candidate.patch touches no files"));
+    }
+    for path in &paths {
+        ensure_safe_relative_file(path, "candidate.patch")?;
+        if forbidden_files
+            .iter()
+            .any(|pattern| forbidden_match(pattern, path))
+        {
+            return Err(DevToolError::new(format!(
+                "patch path {path} matches forbidden_files"
+            )));
+        }
+        if !allowed_files.iter().any(|allowed| allowed == path) {
+            return Err(DevToolError::new(format!(
+                "patch path {path} is not in allowed_files"
+            )));
+        }
+    }
+
+    Ok(json!({
+        "decision": "PASS",
+        "submission_contract": "PASS",
+        "acceptance_status": "not_run_by_sandbox_v0",
+        "paths": paths,
+        "runtime_truth": false
+    }))
+}
+
+pub fn apply_worker_sandbox_submission(dir: &Path, worktree: &Path) -> DevToolResult<Value> {
+    let validation = validate_worker_sandbox_submission(dir)?;
+    let patch_path = dir.join("submit/candidate.patch");
+    let status = Command::new("git")
+        .arg("-C")
+        .arg(worktree)
+        .arg("apply")
+        .arg(&patch_path)
+        .status()
+        .map_err(io_error)?;
+    if !status.success() {
+        return Err(DevToolError::new("git apply failed for candidate.patch"));
+    }
+    let report = json!({
+        "decision": "PASS",
+        "applied": true,
+        "worktree": worktree.display().to_string(),
+        "paths": validation.get("paths").cloned().unwrap_or_else(|| json!([])),
+        "runtime_truth": false
+    });
+    fs::write(
+        dir.join("submit/application_report.json"),
+        serde_json::to_vec_pretty(&report).map_err(json_error)?,
+    )
+    .map_err(io_error)?;
+    Ok(report)
+}
+
 fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Value {
     json!({
         "atom_id": atom_id,
@@ -1001,9 +1271,359 @@ fn board_row(atom_id: &str, task: &Value, source_event_cids: Vec<String>) -> Val
         "duplicate_policy": task.get("duplicate_policy").cloned().unwrap_or_else(|| json!("first_valid_pr_wins")),
         "blockers": task.get("blockers").cloned().unwrap_or_else(|| json!([])),
         "pr_number": task.get("pr_number").cloned().unwrap_or(Value::Null),
+        "pr_url": task.get("pr_url").cloned().unwrap_or(Value::Null),
         "merge_decision": task.get("merge_decision").cloned().unwrap_or(Value::Null),
+        "merge_method": task.get("merge_method").cloned().unwrap_or(Value::Null),
+        "main_after": task.get("main_after").cloned().unwrap_or(Value::Null),
+        "merge_commit_sha": task.get("merge_commit_sha").cloned().unwrap_or(Value::Null),
+        "squash_commit_sha": task.get("squash_commit_sha").cloned().unwrap_or(Value::Null),
+        "merge_decision_cid": task.get("merge_decision_cid").cloned().unwrap_or(Value::Null),
         "source_event_cids": source_event_cids
     })
+}
+
+fn claim_atom(pr: &Value) -> Option<String> {
+    let title = pr.get("title").and_then(Value::as_str).unwrap_or("");
+    title_atom(title).or_else(|| pr.get("body").and_then(Value::as_str).and_then(body_atom))
+}
+
+fn has_worker_report(pr: &Value) -> bool {
+    let body = pr.get("body").and_then(Value::as_str).unwrap_or("");
+    body.contains("WorkerReport") && body.contains("[WORKER_HALT]")
+}
+
+fn has_failed_check(pr: &Value) -> bool {
+    pr.get("statusCheckRollup")
+        .and_then(Value::as_array)
+        .is_some_and(|checks| {
+            checks.iter().any(|check| {
+                matches!(
+                    check.get("conclusion").and_then(Value::as_str),
+                    Some("FAILURE") | Some("CANCELLED") | Some("TIMED_OUT")
+                )
+            })
+        })
+}
+
+fn title_atom(title: &str) -> Option<String> {
+    for prefix in ["[CLAIM][", "[WORKER]["] {
+        let Some(rest) = title.strip_prefix(prefix) else {
+            continue;
+        };
+        let (atom, _) = rest.split_once("]")?;
+        if !atom.is_empty() {
+            return Some(atom.to_string());
+        }
+    }
+    None
+}
+
+fn body_atom(body: &str) -> Option<String> {
+    body.lines().find_map(|line| {
+        let trimmed = line.trim().trim_start_matches('-').trim();
+        let value = trimmed.strip_prefix("atom_id:")?.trim();
+        if value.is_empty() {
+            None
+        } else {
+            Some(value.trim_matches('"').to_string())
+        }
+    })
+}
+
+fn pr_action(
+    pr: &Value,
+    task: Option<&Value>,
+    atom_id: Value,
+    action: &str,
+    needs_worker_report: bool,
+) -> Value {
+    let audit = task
+        .map(|task| deterministic_pr_audit(pr, task))
+        .unwrap_or_else(|| {
+            json!({
+                "verdict": "HOLD",
+                "reasons": ["missing task projection"],
+                "changed_files": changed_file_paths(pr)
+            })
+        });
+    let audit_passed = audit.get("verdict").and_then(Value::as_str) == Some("PASS");
+    let veto_violations = audit
+        .get("violations")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let veto_passed = audit_passed && veto_violations.is_empty();
+    let required_ci_passed = checks_passed(pr);
+    let conversation_resolution = pr
+        .get("reviewDecision")
+        .and_then(Value::as_str)
+        .is_some_and(|decision| decision == "APPROVED");
+    let merge_state_status = pr.get("mergeStateStatus").cloned().unwrap_or(Value::Null);
+    let merge_clean = merge_state_status.as_str() == Some("CLEAN");
+    let merge_decision = if required_ci_passed
+        && audit_passed
+        && veto_passed
+        && conversation_resolution
+        && merge_clean
+    {
+        "PROCEED"
+    } else {
+        "HOLD"
+    };
+
+    json!({
+        "pr_number": pr.get("number").cloned().unwrap_or(Value::Null),
+        "url": pr.get("url").cloned().unwrap_or(Value::Null),
+        "atom_id": atom_id,
+        "action": action,
+        "needs_worker_report": needs_worker_report,
+        "is_draft": pr.get("isDraft").cloned().unwrap_or(Value::Null),
+        "created_at": pr.get("createdAt").cloned().unwrap_or(Value::Null),
+        "state": pr.get("state").cloned().unwrap_or(Value::Null),
+        "merged_at": pr.get("mergedAt").cloned().unwrap_or(Value::Null),
+        "merge_commit_sha": pr
+            .get("mergeCommit")
+            .and_then(|commit| commit.get("oid"))
+            .cloned()
+            .unwrap_or(Value::Null),
+        "merge_state_status": merge_state_status,
+        "review_decision": pr.get("reviewDecision").cloned().unwrap_or(Value::Null),
+        "required_ci_passed": required_ci_passed,
+        "conversation_resolution": conversation_resolution,
+        "branch_protection_snapshot": format!(
+            "github-pr:{}:{}",
+            pr.get("number").and_then(Value::as_u64).unwrap_or(0),
+            pr.get("mergeStateStatus").and_then(Value::as_str).unwrap_or("UNKNOWN")
+        ),
+        "audit_verdict": audit.get("verdict").cloned().unwrap_or_else(|| json!("HOLD")),
+        "audit_reasons": audit.get("reasons").cloned().unwrap_or_else(|| json!([])),
+        "changed_files": audit.get("changed_files").cloned().unwrap_or_else(|| json!([])),
+        "veto_verdict": if veto_passed { "PASS" } else { "VETO" },
+        "veto_violations": veto_violations,
+        "merge_decision": merge_decision
+    })
+}
+
+fn pr_string(pr: &Value, key: &str) -> String {
+    pr.get(key)
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string()
+}
+
+fn deterministic_pr_audit(pr: &Value, task: &Value) -> Value {
+    let changed_files = changed_file_paths(pr);
+    let allowed_files = task_string_list(task, "allowed_files");
+    let forbidden_files = task_string_list(task, "forbidden_files");
+    let mut reasons = Vec::new();
+    let mut violations = Vec::new();
+
+    if changed_files.is_empty() {
+        reasons.push("PR changed files are unavailable".to_string());
+    }
+    for path in &changed_files {
+        if !allowed_files
+            .iter()
+            .any(|pattern| path_matches(pattern, path))
+        {
+            reasons.push(format!("{path} is outside allowed_files"));
+        }
+        if forbidden_files
+            .iter()
+            .any(|pattern| path_matches(pattern, path))
+        {
+            let message = format!("{path} matches forbidden_files");
+            reasons.push(message.clone());
+            violations.push(message);
+        }
+    }
+
+    json!({
+        "verdict": if reasons.is_empty() { "PASS" } else { "HOLD" },
+        "reasons": reasons,
+        "violations": violations,
+        "changed_files": changed_files
+    })
+}
+
+fn changed_file_paths(pr: &Value) -> Vec<String> {
+    pr.get("files")
+        .and_then(Value::as_array)
+        .map(|files| {
+            files
+                .iter()
+                .filter_map(|file| file.get("path").and_then(Value::as_str))
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn task_string_list(task: &Value, key: &str) -> Vec<String> {
+    task.get(key)
+        .and_then(Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn checks_passed(pr: &Value) -> bool {
+    pr.get("statusCheckRollup")
+        .and_then(Value::as_array)
+        .is_some_and(|checks| {
+            !checks.is_empty()
+                && checks.iter().all(|check| {
+                    matches!(
+                        check.get("conclusion").and_then(Value::as_str),
+                        Some("SUCCESS") | Some("NEUTRAL") | Some("SKIPPED")
+                    )
+                })
+        })
+}
+
+fn path_matches(pattern: &str, path: &str) -> bool {
+    if pattern == path {
+        return true;
+    }
+    if let Some(prefix) = pattern.strip_suffix("/**") {
+        return path == prefix || path.starts_with(&format!("{prefix}/"));
+    }
+    false
+}
+
+fn worker_task_text(task: &Value, manifest: &Value) -> String {
+    let atom_id = task.get("atom_id").and_then(Value::as_str).unwrap_or("-");
+    let title = task.get("title").and_then(Value::as_str).unwrap_or("-");
+    let goal = task.get("goal").and_then(Value::as_str).unwrap_or("-");
+    format!(
+        "# Worker Sandbox Task\n\n\
+         atom_id: {atom_id}\n\
+         title: {title}\n\n\
+         Goal:\n{goal}\n\n\
+         This is a soft sandbox: it limits the context package and submission \
+         contract, but it is not a hard OS security boundary.\n\n\
+         Allowed files:\n{}\n\n\
+         Submit exactly:\n\
+         - submit/candidate.patch\n\
+         - submit/WorkerReport.json\n\n\
+         WorkerReport.json must contain [WORKER_HALT].\n",
+        markdown_list(manifest.get("allowed_files").unwrap_or(&Value::Null))
+    )
+}
+
+fn worker_context_text(task: &Value, manifest: &Value) -> String {
+    format!(
+        "# Worker Context\n\n\
+         Read only the files exported under allowed_files/ and this task context.\n\
+         Do not assume access to the full repository.\n\
+         If an instruction asks for a repo document that is not exported here, \
+         do not read the full repo; ask MetaAI for a richer context bundle.\n\n\
+         Instructions:\n{}\n\n\
+         Acceptance tests:\n{}\n\n\
+         Forbidden files:\n{}\n",
+        markdown_list(
+            task.get("step_by_step_instructions")
+                .unwrap_or(&Value::Null)
+        ),
+        markdown_list(task.get("acceptance_tests").unwrap_or(&Value::Null)),
+        markdown_list(manifest.get("forbidden_files").unwrap_or(&Value::Null))
+    )
+}
+
+fn markdown_list(value: &Value) -> String {
+    value
+        .as_array()
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(|item| format!("- {item}"))
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
+        .filter(|text| !text.is_empty())
+        .unwrap_or_else(|| "- none".to_string())
+}
+
+fn string_array(value: &Value, key: &str) -> DevToolResult<Vec<String>> {
+    value
+        .get(key)
+        .and_then(Value::as_array)
+        .ok_or_else(|| DevToolError::new(format!("{key} must be an array")))?
+        .iter()
+        .map(|item| {
+            item.as_str()
+                .map(str::to_string)
+                .ok_or_else(|| DevToolError::new(format!("{key} entries must be strings")))
+        })
+        .collect()
+}
+
+fn ensure_safe_relative_file(path: &str, label: &str) -> DevToolResult<()> {
+    let relative = Path::new(path);
+    if path.is_empty() || relative.is_absolute() || path.contains('*') {
+        return Err(DevToolError::new(format!(
+            "{label} path must be a plain relative file path"
+        )));
+    }
+    if relative
+        .components()
+        .any(|component| matches!(component, Component::ParentDir | Component::RootDir))
+    {
+        return Err(DevToolError::new(format!(
+            "{label} path must not escape the sandbox"
+        )));
+    }
+    Ok(())
+}
+
+fn patch_paths(patch: &str) -> Vec<String> {
+    let mut paths = BTreeSet::new();
+    for line in patch.lines() {
+        if let Some(rest) = line.strip_prefix("diff --git ") {
+            for part in rest.split_whitespace().take(2) {
+                if let Some(path) = strip_patch_prefix(part) {
+                    paths.insert(path);
+                }
+            }
+        } else if let Some(rest) = line.strip_prefix("--- ") {
+            if let Some(part) = rest.split_whitespace().next() {
+                if let Some(path) = strip_patch_prefix(part) {
+                    paths.insert(path);
+                }
+            }
+        } else if let Some(rest) = line.strip_prefix("+++ ") {
+            if let Some(part) = rest.split_whitespace().next() {
+                if let Some(path) = strip_patch_prefix(part) {
+                    paths.insert(path);
+                }
+            }
+        }
+    }
+    paths.into_iter().collect()
+}
+
+fn strip_patch_prefix(path: &str) -> Option<String> {
+    if path == "/dev/null" {
+        return None;
+    }
+    path.strip_prefix("a/")
+        .or_else(|| path.strip_prefix("b/"))
+        .or(Some(path))
+        .map(str::to_string)
+}
+
+fn forbidden_match(pattern: &str, path: &str) -> bool {
+    if let Some(prefix) = pattern.strip_suffix("/**") {
+        path == prefix || path.starts_with(&format!("{prefix}/"))
+    } else {
+        pattern == path
+    }
 }
 
 fn hash_json(value: &Value) -> DevToolResult<String> {
@@ -1099,6 +1719,12 @@ fn copy_optional(from: &Value, to: &mut Value, key: &str) {
 fn copy_as(from: &Value, to: &mut Value, source: &str, target: &str) {
     if let Some(value) = from.get(source) {
         to[target] = value.clone();
+    }
+}
+
+fn remember_pr_atom(payload: &Value, atom_id: &str, pr_atoms: &mut BTreeMap<u64, String>) {
+    if let Some(pr_number) = payload.get("pr_number").and_then(Value::as_u64) {
+        pr_atoms.insert(pr_number, atom_id.to_string());
     }
 }
 
